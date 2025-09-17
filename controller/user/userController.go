@@ -216,7 +216,6 @@ func CreateUser(c *fiber.Ctx) error {
 		Status:       p.Status,
 		CountryUUID:  stringToPointer(p.CountryUUID),
 		ProvinceUUID: stringToPointer(p.ProvinceUUID),
-		AreaUUID:     stringToPointer(p.AreaUUID),
 		Signature:    p.Signature,
 	}
 
@@ -236,14 +235,6 @@ func CreateUser(c *fiber.Ctx) error {
 	// Log user creation activity
 	utils.LogCreateWithDB(database.DB, c, "user", user.Fullname, user.UUID)
 
-	// if err := database.DB.Create(user).Error; err != nil {
-	// 	c.Status(500)
-	// 	sm := strings.Split(err.Error(), ":")
-	// 	m := strings.TrimSpace(sm[1])
-
-	// 	return c.JSON(fiber.Map{
-	// 		"message": m,
-	// 	})
 	// }
 
 	return c.JSON(
@@ -310,7 +301,6 @@ func UpdateUser(c *fiber.Ctx) error {
 	user.Status = updateData.Status
 	user.CountryUUID = stringToPointer(updateData.CountryUUID)
 	user.ProvinceUUID = stringToPointer(updateData.ProvinceUUID)
-	user.AreaUUID = stringToPointer(updateData.AreaUUID)
 	user.Signature = updateData.Signature
 
 	db.Save(&user)

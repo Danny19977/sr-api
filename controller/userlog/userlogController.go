@@ -249,7 +249,6 @@ func DeleteUserLog(c *fiber.Ctx) error {
 	db := database.DB
 
 	var user_logs models.UserLogs
-	// db.First(&user_logs, id)
 	db.Where("uuid = ?", uuid).First(&user_logs)
 	if user_logs.Name == "" {
 		return c.Status(404).JSON(

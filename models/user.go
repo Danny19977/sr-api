@@ -27,8 +27,6 @@ type User struct {
 	Country         *Country  `gorm:"foreignKey:CountryUUID;references:UUID"`
 	ProvinceUUID    *string   `json:"province_uuid" gorm:"type:varchar(255)"`
 	Province        *Province `gorm:"foreignKey:ProvinceUUID;references:UUID"`
-	AreaUUID        *string   `json:"area_uuid" gorm:"type:varchar(255)"`
-	Area            *Area     `gorm:"foreignKey:AreaUUID;references:UUID"`
 
 	Signature string `json:"signature"`
 
@@ -47,8 +45,6 @@ type UserResponse struct {
 	Country      *Country
 	ProvinceUUID *string `json:"province_uuid" gorm:"type:varchar(255)"`
 	Province     *Province
-	AreaUUID     *string `json:"area_uuid" gorm:"type:varchar(255)"`
-	Area         *Area
 	Permission   string `json:"permission"`
 	Status       bool   `json:"status"`
 	Signature    string `json:"signature"`

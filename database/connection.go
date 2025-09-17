@@ -34,15 +34,8 @@ func Connect() {
 	connection.AutoMigrate(
 		&models.Country{},
 		&models.Province{},
-		&models.Area{},
 		&models.User{},
 		&models.UserLogs{},
-		&models.Manager{},
-		&models.Form{},
-		&models.FormItem{},
-		&models.Visite{},
-		&models.VisiteHarder{},
-		&models.VisiteData{},
 		&models.Notification{},
 		&models.PasswordReset{},
 	)
