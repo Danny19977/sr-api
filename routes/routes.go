@@ -4,7 +4,6 @@ import (
 	"github.com/Danny19977/sr-api/controller/auth"
 	"github.com/Danny19977/sr-api/controller/country"
 	"github.com/Danny19977/sr-api/controller/province"
-	"github.com/Danny19977/sr-api/controller/sales"
 	"github.com/Danny19977/sr-api/controller/user"
 	"github.com/Danny19977/sr-api/controller/userlog"
 	"github.com/Danny19977/sr-api/middlewares"
@@ -75,19 +74,18 @@ func Setup(app *fiber.App) {
 	prov.Put("/update/:uuid", province.UpdateProvince)
 	prov.Delete("/delete/:uuid", province.DeleteProvince)
 
-	// Sales controller - Protected routes
-	salesGroup := api.Group("/sales")
-	salesGroup.Use(middlewares.IsAuthenticated)
-	salesGroup.Get("/all", sales.GetAllSales)
-	salesGroup.Get("/all/paginate", sales.GetPaginatedSales)
-	salesGroup.Get("/all/province/:province_uuid", sales.GetSalesByProvince)
-	salesGroup.Get("/get/:uuid", sales.GetSale)
-	salesGroup.Post("/create", sales.CreateSale)
-	salesGroup.Put("/update/:uuid", sales.UpdateSale)
-	salesGroup.Delete("/delete/:uuid", sales.DeleteSale)
-
 	// Dashboard controller - Protected routes
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
 
+	// Sale controller - Protected routes
+	sale := api.Group("/sales")
+	sale.Use(middlewares.IsAuthenticated)
+	sale.Get("/all", sale.GetAllSale)
+	sale.Get("/all/paginate", sale.GetPaginatedSale)
+	sale.Get("/all/province/:province_uuid", sale.GetSaleByProvince)
+	sale.Get("/get/:uuid", sale.GetSale)
+	sale.Post("/create", sale.CreateSale)
+	sale.Put("/update/:uuid", sale.UpdateSale)
+	sale.Delete("/delete/:uuid", sale.DeleteSale)
 }

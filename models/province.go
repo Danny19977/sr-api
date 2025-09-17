@@ -14,7 +14,7 @@ type Province struct {
 	CountryUUID string  `json:"country_uuid" gorm:"type:varchar(255);not null"`
 	Country     Country `gorm:"foreignKey:CountryUUID;references:UUID"`
 
-	Signature string `json:"signature_uid"`
+	Signature string `json:"signature_uuid"`
 
 	Users   []User   `gorm:"foreignKey:ProvinceUUID;references:UUID"`
 }

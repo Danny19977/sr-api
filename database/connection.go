@@ -34,6 +34,7 @@ func Connect() {
 	connection.AutoMigrate(
 		&models.Country{},
 		&models.Province{},
+		&models.Sale{},
 		&models.User{},
 		&models.UserLogs{},
 		&models.Notification{},

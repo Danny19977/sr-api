@@ -11,4 +11,5 @@ type Sale struct {
 	ProductUUID  string    `json:"product_uuid" gorm:"not null"`
 	UserUUID     string    `json:"user_uuid" gorm:"not null"`
 	Quantity     int64     `json:"quantity" gorm:"not null"`
+	Signature    string    `json:"signature_uuid"`
 }

@@ -1,4 +1,4 @@
-package sales
+package Sale
 
 import (
 	"strconv"
@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// Paginate Sales
-func GetPaginatedSales(c *fiber.Ctx) error {
+// Paginate Sale
+func GetPaginatedSale(c *fiber.Ctx) error {
 	db := database.DB
 
 	page, err := strconv.Atoi(c.Query("page", "1"))
@@ -40,7 +40,7 @@ func GetPaginatedSales(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
 			"status":  "error",
-			"message": "Failed to fetch sales",
+			"message": "Failed to fetch Sale",
 			"error":   err.Error(),
 		})
 	}
@@ -56,33 +56,33 @@ func GetPaginatedSales(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{
 		"status":     "success",
-		"message":    "Get all Sales Paginate success",
+		"message":    "Get all Sale Paginate success",
 		"data":       dataList,
 		"pagination": pagination,
 	})
 }
 
-// Get All Sales
-func GetAllSales(c *fiber.Ctx) error {
+// Get All Sale
+func GetAllSale(c *fiber.Ctx) error {
 	db := database.DB
 	var data []models.Sale
 	db.Find(&data)
 	return c.JSON(fiber.Map{
 		"status":  "success",
-		"message": "All sales fetched",
+		"message": "All Sale fetched",
 		"data":    data,
 	})
 }
 
-// Get Sales by Province
-func GetSalesByProvince(c *fiber.Ctx) error {
+// Get Sale by Province
+func GetSaleByProvince(c *fiber.Ctx) error {
 	db := database.DB
 	provinceUUID := c.Params("province_uuid")
 	var data []models.Sale
 	db.Where("province_uuid = ?", provinceUUID).Find(&data)
 	return c.JSON(fiber.Map{
 		"status":  "success",
-		"message": "Sales by province fetched",
+		"message": "Sale by province fetched",
 		"data":    data,
 	})
 }
