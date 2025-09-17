@@ -3,8 +3,8 @@ package formitem
 import (
 	"strconv"
 
-	"github.com/Danny19977/mypg-api/database"
-	"github.com/Danny19977/mypg-api/models"
+	"github.com/Danny19977/sr-api/database"
+	"github.com/Danny19977/sr-api/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )

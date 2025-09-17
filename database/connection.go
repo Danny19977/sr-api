@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Danny19977/mypg-api/models"
-	"github.com/Danny19977/mypg-api/utils"
+	"github.com/Danny19977/sr-api/models"
+	"github.com/Danny19977/sr-api/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -38,11 +38,11 @@ func Connect() {
 		&models.User{},
 		&models.UserLogs{},
 		&models.Manager{},
-		&models.Form{},         
-		&models.FormItem{},     
-		&models.Visite{},       
-		&models.VisiteHarder{}, 
-		&models.VisiteData{},   
+		&models.Form{},
+		&models.FormItem{},
+		&models.Visite{},
+		&models.VisiteHarder{},
+		&models.VisiteData{},
 		&models.Notification{},
 		&models.PasswordReset{},
 	)

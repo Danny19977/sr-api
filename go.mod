@@ -1,4 +1,4 @@
-module github.com/Danny19977/mypg-api
+module github.com/Danny19977/sr-api
 
 go 1.24.4
 

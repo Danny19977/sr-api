@@ -3,7 +3,7 @@ package middlewares
 import (
 	"strings"
 
-	"github.com/Danny19977/mypg-api/utils"
+	"github.com/Danny19977/sr-api/utils"
 	"github.com/gofiber/fiber/v2"
 )
 

@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Danny19977/mypg-api/database"
-	"github.com/Danny19977/mypg-api/routes"
+	"github.com/Danny19977/sr-api/database"
+	"github.com/Danny19977/sr-api/routes"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"

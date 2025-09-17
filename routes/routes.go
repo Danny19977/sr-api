@@ -1,19 +1,19 @@
 package routes
 
 import (
-	"github.com/Danny19977/mypg-api/controller/area"
-	"github.com/Danny19977/mypg-api/controller/auth"
-	"github.com/Danny19977/mypg-api/controller/country"
-	"github.com/Danny19977/mypg-api/controller/form"
-	"github.com/Danny19977/mypg-api/controller/formitem"
-	"github.com/Danny19977/mypg-api/controller/manager"
-	"github.com/Danny19977/mypg-api/controller/province"
-	"github.com/Danny19977/mypg-api/controller/user"
-	"github.com/Danny19977/mypg-api/controller/userlog"
-	"github.com/Danny19977/mypg-api/controller/visite"
-	"github.com/Danny19977/mypg-api/controller/visitedata"
-	"github.com/Danny19977/mypg-api/controller/visiteharder"
-	"github.com/Danny19977/mypg-api/middlewares"
+	"github.com/Danny19977/sr-api/controller/area"
+	"github.com/Danny19977/sr-api/controller/auth"
+	"github.com/Danny19977/sr-api/controller/country"
+	"github.com/Danny19977/sr-api/controller/form"
+	"github.com/Danny19977/sr-api/controller/formitem"
+	"github.com/Danny19977/sr-api/controller/manager"
+	"github.com/Danny19977/sr-api/controller/province"
+	"github.com/Danny19977/sr-api/controller/user"
+	"github.com/Danny19977/sr-api/controller/userlog"
+	"github.com/Danny19977/sr-api/controller/visite"
+	"github.com/Danny19977/sr-api/controller/visitedata"
+	"github.com/Danny19977/sr-api/controller/visiteharder"
+	"github.com/Danny19977/sr-api/middlewares"
 	"github.com/gofiber/fiber/v2"
 )
 
