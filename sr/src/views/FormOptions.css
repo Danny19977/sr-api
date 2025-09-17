@@ -1,0 +1,198 @@
+/* Enhanced FormOptions Styles */
+
+.submissions-dashboard {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.submission-card {
+  border-radius: 15px !important;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.submission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.submission-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submission-header:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%) !important;
+}
+
+.response-card {
+  border-left: 4px solid #007bff;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.response-card:hover {
+  border-left-color: #0056b3;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.response-value-display {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.response-value-display:hover {
+  background-color: #e9ecef !important;
+}
+
+.info-card {
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-circle {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.table-enhanced {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.table-enhanced thead th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.5px;
+}
+
+.stats-display {
+  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+}
+
+.stats-number {
+  font-size: 2rem;
+  font-weight: bold;
+  display: block;
+}
+
+.stats-label {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-header-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  margin-right: 10px;
+}
+
+.response-type-badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.gps-coordinates {
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+}
+
+/* Animation classes */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .submission-card {
+    margin-bottom: 15px;
+  }
+  
+  .response-card {
+    margin-bottom: 10px;
+  }
+  
+  .stats-display {
+    margin-bottom: 10px;
+  }
+}
+
+/* Custom scrollbar for long content */
+.submission-responses::-webkit-scrollbar {
+  width: 6px;
+}
+
+.submission-responses::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.submission-responses::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.submission-responses::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

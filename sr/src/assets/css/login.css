@@ -1,0 +1,158 @@
+/* 
+=========================================================
+* TeamOnSite (TOS) - Login Page Styles
+=========================================================
+*/
+
+.login-page {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-page .card {
+  border-radius: 15px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.login-page .card-body {
+  background: white;
+}
+
+.login-page .form-control {
+  border-radius: 10px;
+  border: 2px solid #e3e3e3;
+  padding: 12px 15px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.login-page .form-control:focus {
+  border-color: #5bc0de;
+  box-shadow: 0 0 0 0.2rem rgba(91, 192, 222, 0.25);
+  background-color: #fff;
+}
+
+.login-page .btn-info {
+  background: linear-gradient(45deg, #5bc0de, #31b0d5);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 30px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(91, 192, 222, 0.3);
+}
+
+/* Custom Toast Styles */
+.Toastify__toast--success {
+  background: #28a745 !important;
+  color: white !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3) !important;
+}
+
+.Toastify__toast--error {
+  background: #dc3545 !important;
+  color: white !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3) !important;
+}
+
+.Toastify__toast--info {
+  background: #17a2b8 !important;
+  color: white !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3) !important;
+}
+
+.Toastify__progress-bar--success {
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.Toastify__progress-bar--error {
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.Toastify__progress-bar--info {
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.Toastify__close-button {
+  color: white !important;
+  opacity: 0.8 !important;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+
+.login-page .btn-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(91, 192, 222, 0.4);
+  background: linear-gradient(45deg, #31b0d5, #269abc);
+}
+
+.login-page .btn-info:disabled {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.login-page .alert {
+  border-radius: 10px;
+  border: none;
+  font-weight: 500;
+}
+
+.login-page .alert-danger {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  color: white;
+}
+
+.login-page h2 {
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.login-page .text-muted {
+  color: #6c757d !important;
+}
+
+.login-page .form-label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .login-page .container-fluid {
+    padding: 20px;
+  }
+  
+  .login-page .card-body {
+    padding: 30px !important;
+  }
+}
+
+/* Animation for the login card */
+.login-page .card {
+  animation: slideInFromBottom 0.6s ease-out;
+}
+
+@keyframes slideInFromBottom {
+  0% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "visite_harder_uuid": "survey-456",
+  "responses": [
+    {
+      "form_item_uuid": "favorite-color-question",
+      "checkbox": "[\"Red\", \"Blue\"]",
+      "entry_order": 1,
+      "sub_item_id": "color-preferences-group",
+      "user_uuid": "user-456"
+    },
+    {
+      "form_item_uuid": "daily-activities-question",
+      "text_value": "Morning run",
+      "entry_order": 1,
+      "entry_label": "Activity 1",
+      "sub_item_id": "activities-group",
+      "user_uuid": "user-456"
+    },
+    {
+      "form_item_uuid": "daily-activities-question",
+      "text_value": "Reading books",
+      "entry_order": 2,
+      "entry_label": "Activity 2",
+      "sub_item_id": "activities-group",
+      "user_uuid": "user-456"
+    },
+    {
+      "form_item_uuid": "daily-activities-question",
+      "text_value": "Cooking dinner",
+      "entry_order": 3,
+      "entry_label": "Activity 3",
+      "sub_item_id": "activities-group",
+      "user_uuid": "user-456"
+    }
+  ]
+}

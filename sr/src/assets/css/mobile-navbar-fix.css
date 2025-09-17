@@ -1,0 +1,192 @@
+/* AGGRESSIVE MOBILE NAVBAR HIDING - FOOLPROOF SOLUTION */
+
+/* MOBILE BREAKPOINTS - HIDE NAVBAR COMPLETELY */
+@media screen and (max-width: 991px),
+       screen and (max-device-width: 991px),
+       (max-width: 991.98px),
+       (orientation: portrait) and (max-width: 1024px) {
+  
+  /* NUCLEAR OPTION - HIDE ALL POSSIBLE NAVBAR SELECTORS */
+  .navbar,
+  nav.navbar,
+  .navbar-light,
+  .navbar-expand-lg,
+  .navbar-desktop-only,
+  .navbar.d-none.d-lg-block,
+  .navbar.d-none.d-lg-flex,
+  nav[class*="navbar"],
+  [class*="navbar"],
+  .bg-light.navbar,
+  .navbar.bg-light {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
+    z-index: -1 !important;
+    transform: scale(0) !important;
+  }
+  
+  /* OVERRIDE ALL BOOTSTRAP DISPLAY UTILITIES */
+  .d-lg-block,
+  .d-lg-flex,
+  .d-lg-inline,
+  .d-lg-inline-block {
+    display: none !important;
+  }
+  
+  /* FORCE HIDE BOOTSTRAP NAVBAR COMPONENTS */
+  .navbar-brand,
+  .navbar-nav,
+  .navbar-toggler,
+  .navbar-collapse {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* MAIN PANEL ADJUSTMENTS */
+  .main-panel {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    width: 100% !important;
+  }
+  
+  /* CONTENT AREA ADJUSTMENTS */
+  .content {
+    padding-top: 80px !important;
+    margin-top: 0 !important;
+  }
+  
+  /* MOBILE MENU BUTTON VISIBILITY */
+  .mobile-menu-toggle {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* TABLET SPECIFIC HIDING */
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .navbar {
+    display: none !important;
+  }
+}
+
+/* PHONE SPECIFIC HIDING */
+@media screen and (max-width: 767px) {
+  .navbar {
+    display: none !important;
+  }
+}
+
+/* DESKTOP - SHOW NAVBAR */
+@media screen and (min-width: 992px) {
+  .navbar-desktop-only,
+  .navbar.d-none.d-lg-block {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    transform: scale(1) !important;
+  }
+  
+  .d-lg-block {
+    display: block !important;
+  }
+  
+  .d-lg-flex {
+    display: flex !important;
+  }
+  
+  .content {
+    padding-top: 20px !important;
+  }
+  
+  .mobile-menu-toggle {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+/* MOBILE MENU TOGGLE BUTTON */
+.mobile-menu-toggle {
+  position: fixed !important;
+  top: 15px !important;
+  left: 15px !important;
+  z-index: 9999 !important;
+  border-radius: 50% !important;
+  width: 50px !important;
+  height: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+  background-color: #007bff !important;
+  color: white !important;
+  transition: all 0.3s ease !important;
+}
+
+.mobile-menu-toggle:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+  background-color: #0056b3 !important;
+}
+
+/* SIDEBAR CLOSE BUTTON */
+.sidebar-close-btn {
+  transition: all 0.2s ease !important;
+  background: rgba(0,0,0,0.2) !important;
+  border: 1px solid rgba(255,255,255,0.3) !important;
+  color: white !important;
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.5) !important;
+  color: white !important;
+}
+
+/* ADDITIONAL MOBILE OPTIMIZATIONS */
+@media (max-width: 991px) {
+  .sidebar {
+    box-shadow: 0 0 20px rgba(0,0,0,0.3) !important;
+  }
+  
+  .nav-open .main-panel {
+    overflow: hidden !important;
+  }
+  
+  .nav-open .sidebar {
+    z-index: 1032 !important;
+  }
+}
+
+/* FORCE OVERRIDE ANY CONFLICTING STYLES */
+body .navbar,
+html .navbar,
+* .navbar {
+  display: none !important;
+}
+
+@media (min-width: 992px) {
+  body .navbar-desktop-only,
+  html .navbar-desktop-only,
+  * .navbar-desktop-only {
+    display: block !important;
+  }
+}

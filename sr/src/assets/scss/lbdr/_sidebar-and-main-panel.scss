@@ -1,0 +1,122 @@
+.sidebar{
+    &[data-color="black"]:after{
+        @include icon-gradient(#282828, rgba(#111,.7));
+    }
+    .logo-img img {
+      max-width: 40px;
+      max-height: 40px;
+    }
+    
+    // Custom section headings styling
+    .nav-section-heading {
+        margin-top: 25px;
+        margin-bottom: 10px;
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            color: #b3b3b3;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            
+            i {
+                font-size: 16px;
+                margin-right: 8px;
+                color: #f4a742;
+            }
+            
+            .section-title {
+                font-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+            }
+        }
+        
+        &:first-child {
+            margin-top: 15px;
+        }
+    }
+    
+    // Adjust spacing for nav items after headings
+    .nav-section-heading + li {
+        margin-top: 8px;
+    }
+}
+
+// Timeline styling for activity feeds
+.activity-timeline {
+    .timeline-item {
+        position: relative;
+        padding-left: 30px;
+        
+        .timeline-marker {
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
+        
+        .timeline-content {
+            h6 {
+                margin-bottom: 5px;
+                font-weight: 600;
+            }
+        }
+    }
+}
+
+// Alert feed styling
+.alert-feed {
+    .alert-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        
+        &:last-child {
+            border-bottom: none;
+        }
+        
+        i {
+            margin-top: 2px;
+        }
+        
+        span {
+            flex: 1;
+        }
+    }
+}
+
+// Avatar styling
+.avatar {
+    &.avatar-sm {
+        width: 35px;
+        height: 35px;
+        
+        .avatar-title {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    }
+}
+
+@media (max-width: 991px){
+  .sidebar .nav > li.active.active-pro {
+    position: relative;
+    bottom: unset;
+  }
+}
+
+#bodyClick {
+  position: absolute;
+}

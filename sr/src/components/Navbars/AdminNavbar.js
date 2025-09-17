@@ -1,0 +1,160 @@
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { Navbar, Container, Nav, Dropdown, Button } from "react-bootstrap";
+
+import routes from "routes.js";
+import { useAuth } from "../../contexts/AuthContext";
+
+function Header() {
+  const location = useLocation();
+  const { logout, user } = useAuth();
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  // Don't render navbar at all on mobile
+  if (windowWidth < 992) {
+    return null;
+  }
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+  const mobileSidebarToggle = (e) => {
+    e.preventDefault();
+    document.documentElement.classList.toggle("nav-open");
+    var node = document.createElement("div");
+    node.id = "bodyClick";
+    node.onclick = function () {
+      this.parentElement.removeChild(this);
+      document.documentElement.classList.toggle("nav-open");
+    };
+    document.body.appendChild(node);
+  };
+
+  const getBrandText = () => {
+    for (let i = 0; i < routes.length; i++) {
+      if (location.pathname.indexOf(routes[i].layout + routes[i].path) !== -1) {
+        return routes[i].name;
+      }
+    }
+    return "Brand";
+  };
+  
+  return (
+    <Navbar 
+      bg="light" 
+      expand="lg" 
+      className="navbar-desktop-only"
+    >
+      <Container fluid>
+        <div className="d-flex justify-content-center align-items-center ml-2 ml-lg-0">
+          <Navbar.Brand
+            href="#home"
+            onClick={(e) => e.preventDefault()}
+            className="mr-2"
+          >
+            {getBrandText()}
+          </Navbar.Brand>
+        </div>
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="nav mr-auto" navbar>
+            {/* Dropdown and notification icons removed as requested */}
+            <Nav.Item>
+              <Nav.Link
+                className="m-0"
+                href="#pablo"
+                onClick={(e) => e.preventDefault()}
+              >
+                <i className="nc-icon nc-zoom-split"></i>
+                <span className="d-lg-block"> Search</span>
+              </Nav.Link>
+            </Nav.Item>
+          </Nav>
+          <Nav className="ml-auto" navbar>
+            <Nav.Item>
+              <Nav.Link
+                className="m-0"
+                href="#pablo"
+                onClick={(e) => e.preventDefault()}
+              >
+                <span className="no-icon">Account</span>
+              </Nav.Link>
+            </Nav.Item>
+            {/* <Dropdown as={Nav.Item}>
+              <Dropdown.Toggle
+                aria-expanded={false}
+                aria-haspopup={true}
+                as={Nav.Link}
+                data-toggle="dropdown"
+                id="navbarDropdownMenuLink"
+                variant="default"
+                className="m-0"
+              >
+                <span className="no-icon">Dropdown</span>
+              </Dropdown.Toggle>
+              <Dropdown.Menu aria-labelledby="navbarDropdownMenuLink">
+                <Dropdown.Item
+                  href="#pablo"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Action
+                </Dropdown.Item>
+                <Dropdown.Item
+                  href="#pablo"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Another action
+                </Dropdown.Item>
+                <Dropdown.Item
+                  href="#pablo"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Something
+                </Dropdown.Item>
+                <Dropdown.Item
+                  href="#pablo"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Something else here
+                </Dropdown.Item>
+                <div className="divider"></div>
+                <Dropdown.Item
+                  href="#pablo"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Separated link
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown> */}
+            <Nav.Item>
+              <Nav.Link
+                className="m-0"
+                href="#pablo"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleLogout();
+                }}
+              >
+                <span className="no-icon">Log out</span>
+              </Nav.Link>
+            </Nav.Item>
+          </Nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
+  );
+}
+
+export default Header;

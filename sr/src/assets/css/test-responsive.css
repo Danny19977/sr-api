@@ -1,0 +1,28 @@
+/* Test styles to verify responsive navbar behavior */
+
+/* This file can be used to test the navbar responsive behavior */
+/* The navbar should be hidden on screens smaller than 992px */
+
+.test-responsive-info {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #007bff;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 9999;
+  font-size: 12px;
+}
+
+@media (max-width: 991.98px) {
+  .test-responsive-info::after {
+    content: " - MOBILE MODE (Navbar Hidden)";
+  }
+}
+
+@media (min-width: 992px) {
+  .test-responsive-info::after {
+    content: " - DESKTOP MODE (Navbar Visible)";
+  }
+}

@@ -1,0 +1,9 @@
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    // Your login logic here
+    res.json({ success: true, token: 'your-token' });
+  } catch (error) {
+    res.status(401).json({ error: 'Login failed' });
+  }
+});

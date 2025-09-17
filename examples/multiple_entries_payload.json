@@ -1,0 +1,37 @@
+{
+  "visite_harder_uuid": "submission-123",
+  "responses": [
+    {
+      "form_item_uuid": "blood-pressure-question",
+      "text_value": "120/80",
+      "entry_order": 1,
+      "entry_label": "Morning Reading",
+      "latitude": 40.7128,
+      "longitude": -74.0060,
+      "user_uuid": "user-123"
+    },
+    {
+      "form_item_uuid": "blood-pressure-question",
+      "text_value": "125/85",
+      "entry_order": 2,
+      "entry_label": "Evening Reading",
+      "latitude": 40.7128,
+      "longitude": -74.0060,
+      "user_uuid": "user-123"
+    },
+    {
+      "form_item_uuid": "medication-question",
+      "text_value": "Aspirin 81mg",
+      "entry_order": 1,
+      "entry_label": "Morning Medication",
+      "user_uuid": "user-123"
+    },
+    {
+      "form_item_uuid": "medication-question",
+      "text_value": "Metformin 500mg",
+      "entry_order": 2,
+      "entry_label": "Evening Medication",
+      "user_uuid": "user-123"
+    }
+  ]
+}
