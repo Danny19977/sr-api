@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/Danny19977/sr-api/controller/auth"
 	"github.com/Danny19977/sr-api/controller/country"
+	"github.com/Danny19977/sr-api/controller/dashboard"
 	"github.com/Danny19977/sr-api/controller/product"
 	"github.com/Danny19977/sr-api/controller/province"
 	Sale "github.com/Danny19977/sr-api/controller/sale"
@@ -90,6 +91,12 @@ func Setup(app *fiber.App) {
 	// Dashboard controller - Protected routes
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
+	dash.Get("/sales-summary", dashboard.GetSalesDashboardSummary)
+	dash.Get("/time-analysis", dashboard.GetDetailedTimeAnalysis)
+	dash.Get("/sales-comparison", dashboard.GetSalesComparison)
+	dash.Get("/real-time", dashboard.GetRealTimeDashboard)
+	dash.Get("/filters", dashboard.GetDashboardFilters)
+	dash.Get("/team-overview", dashboard.GetManagerTeamOverview)
 
 	// Sale controller - Protected routes
 	sale := api.Group("/sales")
