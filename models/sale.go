@@ -12,4 +12,9 @@ type Sale struct {
 	UserUUID     string    `json:"user_uuid" gorm:"not null"`
 	Quantity     int64     `json:"quantity" gorm:"not null"`
 	Signature    string    `json:"signature_uuid"`
+
+	// Relationships
+	Province *Province `json:"province" gorm:"foreignKey:ProvinceUUID;references:UUID"`
+	Product  *Product  `json:"product" gorm:"foreignKey:ProductUUID;references:UUID"`
+	User     *User     `json:"user" gorm:"foreignKey:UserUUID;references:UUID"`
 }

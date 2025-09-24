@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/Danny19977/sr-api/controller/auth"
 	"github.com/Danny19977/sr-api/controller/country"
+	"github.com/Danny19977/sr-api/controller/product"
 	"github.com/Danny19977/sr-api/controller/province"
 	Sale "github.com/Danny19977/sr-api/controller/sale"
 	"github.com/Danny19977/sr-api/controller/user"
@@ -74,6 +75,17 @@ func Setup(app *fiber.App) {
 	prov.Post("/create", province.CreateProvince)
 	prov.Put("/update/:uuid", province.UpdateProvince)
 	prov.Delete("/delete/:uuid", province.DeleteProvince)
+
+	// Products controller - Protected routes
+	prod := api.Group("/products")
+	prod.Use(middlewares.IsAuthenticated)
+	prod.Get("/all", product.GetAllProducts)
+	prod.Get("/all/paginate", product.GetPaginatedProducts)
+	prod.Get("/get/:uuid", product.GetProduct)
+	prod.Get("/get/name/:name", product.GetProductByName)
+	prod.Post("/create", product.CreateProduct)
+	prod.Put("/update/:uuid", product.UpdateProduct)
+	prod.Delete("/delete/:uuid", product.DeleteProduct)
 
 	// Dashboard controller - Protected routes
 	dash := api.Group("/dashboard")

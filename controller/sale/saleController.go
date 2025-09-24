@@ -35,6 +35,7 @@ func GetPaginatedSale(c *fiber.Ctx) error {
 	query = query.Offset(offset)
 	query = query.Limit(limit)
 	query = query.Order("updated_at DESC")
+	query = query.Preload("Province").Preload("Product").Preload("User")
 	err = query.Find(&dataList).Error
 
 	if err != nil {
@@ -66,7 +67,7 @@ func GetPaginatedSale(c *fiber.Ctx) error {
 func GetAllSale(c *fiber.Ctx) error {
 	db := database.DB
 	var data []models.Sale
-	db.Find(&data)
+	db.Preload("Province").Preload("Product").Preload("User").Find(&data)
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"message": "All Sale fetched",
@@ -79,7 +80,7 @@ func GetSaleByProvince(c *fiber.Ctx) error {
 	db := database.DB
 	provinceUUID := c.Params("province_uuid")
 	var data []models.Sale
-	db.Where("province_uuid = ?", provinceUUID).Find(&data)
+	db.Preload("Province").Preload("Product").Preload("User").Where("province_uuid = ?", provinceUUID).Find(&data)
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"message": "Sale by province fetched",
@@ -92,7 +93,7 @@ func GetSale(c *fiber.Ctx) error {
 	uuid := c.Params("uuid")
 	db := database.DB
 	var sale models.Sale
-	db.Where("uuid = ?", uuid).First(&sale)
+	db.Preload("Province").Preload("Product").Preload("User").Where("uuid = ?", uuid).First(&sale)
 	if sale.UUID == "" {
 		return c.Status(404).JSON(fiber.Map{
 			"status":  "error",
