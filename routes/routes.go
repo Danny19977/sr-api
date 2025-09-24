@@ -88,10 +88,11 @@ func Setup(app *fiber.App) {
 	prod.Put("/update/:uuid", product.UpdateProduct)
 	prod.Delete("/delete/:uuid", product.DeleteProduct)
 
-	// Dashboard controller - Protected routes
+	// Dashboard controller - Protected routes - Focused on stock sales analytics
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
-	dash.Get("/sales-summary", dashboard.GetSalesDashboardSummary)
+	dash.Get("/analytics", dashboard.GetSalesAnalytics)
+	dash.Get("/stock-performance", dashboard.GetStockPerformanceSummary)
 	dash.Get("/time-analysis", dashboard.GetDetailedTimeAnalysis)
 	dash.Get("/sales-comparison", dashboard.GetSalesComparison)
 	dash.Get("/real-time", dashboard.GetRealTimeDashboard)

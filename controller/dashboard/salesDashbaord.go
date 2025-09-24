@@ -1,6 +1,8 @@
 package dashboard
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Danny19977/sr-api/database"
@@ -9,18 +11,123 @@ import (
 	"gorm.io/gorm"
 )
 
-// Dashboard Summary Response Structure
-type DashboardSummary struct {
-	TotalSales      int64               `json:"total_sales"`
-	TotalQuantity   int64               `json:"total_quantity"`
-	TotalSalesUsers int64               `json:"total_sales_users"`
-	TodaySales      int64               `json:"today_sales"`
-	TodayQuantity   int64               `json:"today_quantity"`
-	TimeSlots       []TimeSlotSummary   `json:"time_slots"`
-	TopProducts     []ProductSummary    `json:"top_products"`
-	TopProvinces    []ProvinceSummary   `json:"top_provinces"`
-	RecentSales     []models.Sale       `json:"recent_sales"`
-	TeamPerformance []TeamMemberSummary `json:"team_performance"`
+// Stock Sales Analytics Dashboard - Focused on meaningful sales insights
+
+// SalesAnalytics represents the main sales analytics structure
+type SalesAnalytics struct {
+	Period        string               `json:"period"`         // daily, weekly, monthly
+	DateRange     DateRange            `json:"date_range"`     // period covered
+	StockMovement StockMovementSummary `json:"stock_movement"` // overall stock movement
+	ProductSales  []ProductSalesDetail `json:"product_sales"`  // detailed product performance
+	SalesPersons  []SalesPersonDetail  `json:"sales_persons"`  // who sold what and when
+	TrendAnalysis TrendAnalysis        `json:"trend_analysis"` // period-over-period trends
+	TopPerformers TopPerformers        `json:"top_performers"` // best performing entities
+}
+
+type DateRange struct {
+	StartDate string `json:"start_date"`
+	EndDate   string `json:"end_date"`
+	Days      int    `json:"days"`
+}
+
+type StockMovementSummary struct {
+	TotalQuantitySold      int64   `json:"total_quantity_sold"`
+	TotalSalesTransactions int64   `json:"total_sales_transactions"`
+	AverageQuantityPerSale float64 `json:"average_quantity_per_sale"`
+	DailyAverageQuantity   float64 `json:"daily_average_quantity"`
+	PeakSalesDate          string  `json:"peak_sales_date"`
+	PeakSalesQuantity      int64   `json:"peak_sales_quantity"`
+}
+
+type ProductSalesDetail struct {
+	ProductUUID       string              `json:"product_uuid"`
+	ProductName       string              `json:"product_name"`
+	TotalQuantitySold int64               `json:"total_quantity_sold"`
+	SalesCount        int64               `json:"sales_count"`
+	AveragePerSale    float64             `json:"average_per_sale"`
+	FirstSaleDate     string              `json:"first_sale_date"`
+	LastSaleDate      string              `json:"last_sale_date"`
+	SalesByPeriod     []PeriodSalesData   `json:"sales_by_period"`
+	TopSellers        []ProductSellerInfo `json:"top_sellers"`
+}
+
+type PeriodSalesData struct {
+	Period      string `json:"period"`       // 2025-09-24, 2025-W39, 2025-09
+	PeriodLabel string `json:"period_label"` // Sept 24, Week 39, September
+	Quantity    int64  `json:"quantity"`
+	SalesCount  int64  `json:"sales_count"`
+}
+
+type ProductSellerInfo struct {
+	UserUUID     string `json:"user_uuid"`
+	UserName     string `json:"user_name"`
+	Quantity     int64  `json:"quantity"`
+	SalesCount   int64  `json:"sales_count"`
+	LastSaleDate string `json:"last_sale_date"`
+}
+
+type SalesPersonDetail struct {
+	UserUUID        string               `json:"user_uuid"`
+	UserName        string               `json:"user_name"`
+	UserTitle       string               `json:"user_title"`
+	TotalQuantity   int64                `json:"total_quantity"`
+	TotalSales      int64                `json:"total_sales"`
+	AveragePerDay   float64              `json:"average_per_day"`
+	ProductsSold    []SalesPersonProduct `json:"products_sold"`
+	SalesByPeriod   []PeriodSalesData    `json:"sales_by_period"`
+	PerformanceRank int                  `json:"performance_rank"`
+}
+
+type SalesPersonProduct struct {
+	ProductUUID  string `json:"product_uuid"`
+	ProductName  string `json:"product_name"`
+	Quantity     int64  `json:"quantity"`
+	SalesCount   int64  `json:"sales_count"`
+	LastSaleDate string `json:"last_sale_date"`
+}
+
+type TrendAnalysis struct {
+	CurrentPeriodTotal  int64   `json:"current_period_total"`
+	PreviousPeriodTotal int64   `json:"previous_period_total"`
+	GrowthPercentage    float64 `json:"growth_percentage"`
+	TrendDirection      string  `json:"trend_direction"` // up, down, stable
+	BestPerformingDay   string  `json:"best_performing_day"`
+	WorstPerformingDay  string  `json:"worst_performing_day"`
+}
+
+type TopPerformers struct {
+	TopProduct       ProductPerformance  `json:"top_product"`
+	TopSalesPerson   PersonPerformance   `json:"top_sales_person"`
+	TopProvince      ProvincePerformance `json:"top_province"`
+	MostActivePeriod PeriodPerformance   `json:"most_active_period"`
+}
+
+type ProductPerformance struct {
+	ProductUUID   string `json:"product_uuid"`
+	ProductName   string `json:"product_name"`
+	TotalQuantity int64  `json:"total_quantity"`
+	SalesCount    int64  `json:"sales_count"`
+}
+
+type PersonPerformance struct {
+	UserUUID      string `json:"user_uuid"`
+	UserName      string `json:"user_name"`
+	TotalQuantity int64  `json:"total_quantity"`
+	SalesCount    int64  `json:"sales_count"`
+}
+
+type ProvincePerformance struct {
+	ProvinceUUID  string `json:"province_uuid"`
+	ProvinceName  string `json:"province_name"`
+	TotalQuantity int64  `json:"total_quantity"`
+	SalesCount    int64  `json:"sales_count"`
+}
+
+type PeriodPerformance struct {
+	Period        string `json:"period"`
+	PeriodLabel   string `json:"period_label"`
+	TotalQuantity int64  `json:"total_quantity"`
+	SalesCount    int64  `json:"sales_count"`
 }
 
 type TimeSlotSummary struct {
@@ -54,33 +161,45 @@ type TeamMemberSummary struct {
 	LastSaleTime  *time.Time `json:"last_sale_time"`
 }
 
-// Sales Dashboard Summary - Main endpoint for manager dashboard
-func GetSalesDashboardSummary(c *fiber.Ctx) error {
+// Main Sales Analytics Dashboard - Focused on stock sales insights
+func GetSalesAnalytics(c *fiber.Ctx) error {
 	db := database.DB
 
-	// Get filter parameters
+	// Get parameters
+	period := c.Query("period", "daily") // daily, weekly, monthly
+	year := c.Query("year", "")          // specific year, defaults to current year
 	countryUUID := c.Query("country_uuid", "")
 	provinceUUID := c.Query("province_uuid", "")
-	dateStr := c.Query("date", "")
 
-	// Parse date filter or use today's date
-	var filterDate time.Time
-	if dateStr != "" {
+	// Validate period
+	if period != "daily" && period != "weekly" && period != "monthly" {
+		return c.Status(400).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Invalid period. Use 'daily', 'weekly', or 'monthly'",
+		})
+	}
+
+	// Set year
+	var targetYear int
+	if year != "" {
 		var err error
-		filterDate, err = time.Parse("2006-01-02", dateStr)
+		targetYear, err = strconv.Atoi(year)
 		if err != nil {
 			return c.Status(400).JSON(fiber.Map{
 				"status":  "error",
-				"message": "Invalid date format. Use YYYY-MM-DD",
-				"error":   err.Error(),
+				"message": "Invalid year format",
 			})
 		}
 	} else {
-		filterDate = time.Now()
+		targetYear = time.Now().Year()
 	}
 
-	// Build base query with filters
-	baseQuery := db.Model(&models.Sale{})
+	// Calculate date range for the entire year
+	startDate := time.Date(targetYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(targetYear+1, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	// Build base query
+	baseQuery := db.Model(&models.Sale{}).Where("created_at >= ? AND created_at < ?", startDate, endDate)
 
 	if countryUUID != "" {
 		baseQuery = baseQuery.Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
@@ -91,108 +210,465 @@ func GetSalesDashboardSummary(c *fiber.Ctx) error {
 		baseQuery = baseQuery.Where("province_uuid = ?", provinceUUID)
 	}
 
-	// Today's date range
-	startOfDay := time.Date(filterDate.Year(), filterDate.Month(), filterDate.Day(), 0, 0, 0, 0, filterDate.Location())
-	endOfDay := startOfDay.Add(24 * time.Hour)
+	// Get analytics data
+	dateRange := DateRange{
+		StartDate: startDate.Format("2006-01-02"),
+		EndDate:   endDate.AddDate(0, 0, -1).Format("2006-01-02"),
+		Days:      int(endDate.Sub(startDate).Hours() / 24),
+	}
 
-	// Get total sales (all time with filters)
-	var totalSales, totalQuantity int64
-	baseQuery.Count(&totalSales)
-	baseQuery.Select("COALESCE(SUM(quantity), 0)").Row().Scan(&totalQuantity)
+	stockMovement := getStockMovementSummary(baseQuery, startDate, endDate)
+	productSales := getProductSalesDetails(db, baseQuery, period, startDate, endDate)
+	salesPersons := getSalesPersonDetails(db, baseQuery, period, startDate, endDate)
+	trendAnalysis := getTrendAnalysis(db, baseQuery, period, startDate, endDate)
+	topPerformers := getTopPerformers(baseQuery)
 
-	// Get today's sales
-	var todaySales, todayQuantity int64
-	todayQuery := baseQuery.Where("created_at >= ? AND created_at < ?", startOfDay, endOfDay)
-	todayQuery.Count(&todaySales)
-	todayQuery.Select("COALESCE(SUM(quantity), 0)").Row().Scan(&todayQuantity)
-
-	// Get total users who made sales
-	var totalSalesUsers int64
-	baseQuery.Distinct("user_uuid").Count(&totalSalesUsers)
-
-	// Get time slot summaries (12pm, 3pm, 8pm)
-	timeSlots := getTimeSlotSummary(db, startOfDay, endOfDay, countryUUID, provinceUUID)
-
-	// Get top products
-	topProducts := getTopProducts(db, startOfDay, endOfDay, countryUUID, provinceUUID, 5)
-
-	// Get top provinces
-	topProvinces := getTopProvinces(db, startOfDay, endOfDay, countryUUID, provinceUUID, 5)
-
-	// Get recent sales
-	recentSales := getRecentSales(db, countryUUID, provinceUUID, 10)
-
-	// Get team performance
-	teamPerformance := getTeamPerformance(db, startOfDay, endOfDay, countryUUID, provinceUUID)
-
-	summary := DashboardSummary{
-		TotalSales:      totalSales,
-		TotalQuantity:   totalQuantity,
-		TotalSalesUsers: totalSalesUsers,
-		TodaySales:      todaySales,
-		TodayQuantity:   todayQuantity,
-		TimeSlots:       timeSlots,
-		TopProducts:     topProducts,
-		TopProvinces:    topProvinces,
-		RecentSales:     recentSales,
-		TeamPerformance: teamPerformance,
+	analytics := SalesAnalytics{
+		Period:        period,
+		DateRange:     dateRange,
+		StockMovement: stockMovement,
+		ProductSales:  productSales,
+		SalesPersons:  salesPersons,
+		TrendAnalysis: trendAnalysis,
+		TopPerformers: topPerformers,
 	}
 
 	return c.JSON(fiber.Map{
 		"status":  "success",
-		"message": "Dashboard summary retrieved successfully",
-		"data":    summary,
+		"message": fmt.Sprintf("Sales analytics for %s period in year %d", period, targetYear),
+		"data":    analytics,
 		"filters": fiber.Map{
+			"period":        period,
+			"year":          targetYear,
 			"country_uuid":  countryUUID,
 			"province_uuid": provinceUUID,
-			"date":          filterDate.Format("2006-01-02"),
 		},
 	})
 }
 
-// Get time slot summary for specific hours (12pm, 3pm, 8pm)
-func getTimeSlotSummary(db *gorm.DB, startOfDay, endOfDay time.Time, countryUUID, provinceUUID string) []TimeSlotSummary {
-	timeSlots := []int{12, 15, 20} // 12pm, 3pm, 8pm in 24-hour format
-	var summaries []TimeSlotSummary
+// Get stock movement summary
+func getStockMovementSummary(query *gorm.DB, startDate, endDate time.Time) StockMovementSummary {
+	var totalQuantity, totalSales int64
+	var avgQuantityPerSale float64
 
-	for _, hour := range timeSlots {
-		slotStart := time.Date(startOfDay.Year(), startOfDay.Month(), startOfDay.Day(), hour, 0, 0, 0, startOfDay.Location())
-		slotEnd := slotStart.Add(1 * time.Hour)
+	query.Count(&totalSales)
+	query.Select("COALESCE(SUM(quantity), 0)").Row().Scan(&totalQuantity)
 
-		query := db.Model(&models.Sale{}).Where("created_at >= ? AND created_at < ?", slotStart, slotEnd)
+	if totalSales > 0 {
+		avgQuantityPerSale = float64(totalQuantity) / float64(totalSales)
+	}
 
-		if countryUUID != "" {
-			query = query.Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
-				Where("provinces.country_uuid = ?", countryUUID)
+	days := int(endDate.Sub(startDate).Hours() / 24)
+	dailyAvg := float64(totalQuantity) / float64(days)
+
+	// Get peak sales date
+	var peakDate time.Time
+	var peakQuantity int64
+
+	query.Select("DATE(created_at) as sale_date, SUM(quantity) as daily_total").
+		Group("DATE(created_at)").
+		Order("daily_total DESC").
+		Limit(1).
+		Row().Scan(&peakDate, &peakQuantity)
+
+	return StockMovementSummary{
+		TotalQuantitySold:      totalQuantity,
+		TotalSalesTransactions: totalSales,
+		AverageQuantityPerSale: avgQuantityPerSale,
+		DailyAverageQuantity:   dailyAvg,
+		PeakSalesDate:          peakDate.Format("2006-01-02"),
+		PeakSalesQuantity:      peakQuantity,
+	}
+}
+
+// Get detailed product sales information
+func getProductSalesDetails(db *gorm.DB, baseQuery *gorm.DB, period string, startDate, endDate time.Time) []ProductSalesDetail {
+	var products []ProductSalesDetail
+
+	// Get all products with sales in the period
+	rows, err := baseQuery.
+		Select("product_uuid, products.name as product_name, SUM(quantity) as total_quantity, COUNT(*) as sales_count, MIN(sales.created_at) as first_sale, MAX(sales.created_at) as last_sale").
+		Joins("JOIN products ON sales.product_uuid = products.uuid").
+		Group("product_uuid, products.name").
+		Order("total_quantity DESC").
+		Rows()
+
+	if err != nil {
+		return products
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var product ProductSalesDetail
+		var firstSale, lastSale time.Time
+
+		rows.Scan(&product.ProductUUID, &product.ProductName, &product.TotalQuantitySold,
+			&product.SalesCount, &firstSale, &lastSale)
+
+		product.FirstSaleDate = firstSale.Format("2006-01-02 15:04")
+		product.LastSaleDate = lastSale.Format("2006-01-02 15:04")
+		product.AveragePerSale = float64(product.TotalQuantitySold) / float64(product.SalesCount)
+
+		// Get sales by period for this product
+		product.SalesByPeriod = getProductSalesByPeriod(db, product.ProductUUID, period, startDate, endDate)
+
+		// Get top sellers for this product
+		product.TopSellers = getTopSellersForProduct(db, product.ProductUUID, startDate, endDate)
+
+		products = append(products, product)
+	}
+
+	return products
+}
+
+// Get sales person details
+func getSalesPersonDetails(db *gorm.DB, baseQuery *gorm.DB, period string, startDate, endDate time.Time) []SalesPersonDetail {
+	var salesPersons []SalesPersonDetail
+
+	rows, err := baseQuery.
+		Select("user_uuid, users.fullname as user_name, users.title as user_title, SUM(quantity) as total_quantity, COUNT(*) as total_sales").
+		Joins("JOIN users ON sales.user_uuid = users.uuid").
+		Group("user_uuid, users.fullname, users.title").
+		Order("total_quantity DESC").
+		Rows()
+
+	if err != nil {
+		return salesPersons
+	}
+	defer rows.Close()
+
+	rank := 1
+	days := int(endDate.Sub(startDate).Hours() / 24)
+
+	for rows.Next() {
+		var person SalesPersonDetail
+
+		rows.Scan(&person.UserUUID, &person.UserName, &person.UserTitle,
+			&person.TotalQuantity, &person.TotalSales)
+
+		person.AveragePerDay = float64(person.TotalQuantity) / float64(days)
+		person.PerformanceRank = rank
+
+		// Get products sold by this person
+		person.ProductsSold = getProductsSoldByPerson(db, person.UserUUID, startDate, endDate)
+
+		// Get sales by period for this person
+		person.SalesByPeriod = getPersonSalesByPeriod(db, person.UserUUID, period, startDate, endDate)
+
+		salesPersons = append(salesPersons, person)
+		rank++
+	}
+
+	return salesPersons
+}
+
+// Get trend analysis
+func getTrendAnalysis(db *gorm.DB, baseQuery *gorm.DB, period string, startDate, endDate time.Time) TrendAnalysis {
+	var currentTotal int64
+	baseQuery.Select("COALESCE(SUM(quantity), 0)").Row().Scan(&currentTotal)
+
+	// Get previous period for comparison
+	duration := endDate.Sub(startDate)
+	prevStartDate := startDate.Add(-duration)
+	prevEndDate := startDate
+
+	var prevTotal int64
+	db.Model(&models.Sale{}).
+		Where("created_at >= ? AND created_at < ?", prevStartDate, prevEndDate).
+		Select("COALESCE(SUM(quantity), 0)").Row().Scan(&prevTotal)
+
+	var growthPercentage float64
+	var trendDirection string
+
+	if prevTotal > 0 {
+		growthPercentage = ((float64(currentTotal) - float64(prevTotal)) / float64(prevTotal)) * 100
+	}
+
+	switch {
+	case growthPercentage > 5:
+		trendDirection = "up"
+	case growthPercentage < -5:
+		trendDirection = "down"
+	default:
+		trendDirection = "stable"
+	}
+
+	// Get best and worst performing days
+	var bestDay, worstDay time.Time
+
+	baseQuery.Select("DATE(created_at) as sale_date, SUM(quantity) as daily_total").
+		Group("DATE(created_at)").
+		Order("daily_total DESC").
+		Limit(1).
+		Row().Scan(&bestDay)
+
+	baseQuery.Select("DATE(created_at) as sale_date, SUM(quantity) as daily_total").
+		Group("DATE(created_at)").
+		Order("daily_total ASC").
+		Limit(1).
+		Row().Scan(&worstDay)
+
+	return TrendAnalysis{
+		CurrentPeriodTotal:  currentTotal,
+		PreviousPeriodTotal: prevTotal,
+		GrowthPercentage:    growthPercentage,
+		TrendDirection:      trendDirection,
+		BestPerformingDay:   bestDay.Format("2006-01-02"),
+		WorstPerformingDay:  worstDay.Format("2006-01-02"),
+	}
+}
+
+// Get top performers
+func getTopPerformers(baseQuery *gorm.DB) TopPerformers {
+	var topProduct ProductPerformance
+	var topPerson PersonPerformance
+	var topProvince ProvincePerformance
+
+	// Top product
+	baseQuery.Select("product_uuid, products.name as product_name, SUM(quantity) as total_quantity, COUNT(*) as sales_count").
+		Joins("JOIN products ON sales.product_uuid = products.uuid").
+		Group("product_uuid, products.name").
+		Order("total_quantity DESC").
+		Limit(1).
+		Row().Scan(&topProduct.ProductUUID, &topProduct.ProductName, &topProduct.TotalQuantity, &topProduct.SalesCount)
+
+	// Top sales person
+	baseQuery.Select("user_uuid, users.fullname as user_name, SUM(quantity) as total_quantity, COUNT(*) as sales_count").
+		Joins("JOIN users ON sales.user_uuid = users.uuid").
+		Group("user_uuid, users.fullname").
+		Order("total_quantity DESC").
+		Limit(1).
+		Row().Scan(&topPerson.UserUUID, &topPerson.UserName, &topPerson.TotalQuantity, &topPerson.SalesCount)
+
+	// Top province
+	baseQuery.Select("province_uuid, provinces.name as province_name, SUM(quantity) as total_quantity, COUNT(*) as sales_count").
+		Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
+		Group("province_uuid, provinces.name").
+		Order("total_quantity DESC").
+		Limit(1).
+		Row().Scan(&topProvince.ProvinceUUID, &topProvince.ProvinceName, &topProvince.TotalQuantity, &topProvince.SalesCount)
+
+	return TopPerformers{
+		TopProduct:     topProduct,
+		TopSalesPerson: topPerson,
+		TopProvince:    topProvince,
+	}
+}
+
+// Helper functions for detailed data
+
+func getProductSalesByPeriod(db *gorm.DB, productUUID, period string, startDate, endDate time.Time) []PeriodSalesData {
+	var periods []PeriodSalesData
+
+	var groupBy, selectFormat string
+	switch period {
+	case "daily":
+		groupBy = "DATE(created_at)"
+		selectFormat = "DATE(created_at) as period, SUM(quantity) as quantity, COUNT(*) as sales_count"
+	case "weekly":
+		groupBy = "YEARWEEK(created_at, 1)"
+		selectFormat = "YEARWEEK(created_at, 1) as period, SUM(quantity) as quantity, COUNT(*) as sales_count"
+	case "monthly":
+		groupBy = "DATE_FORMAT(created_at, '%Y-%m')"
+		selectFormat = "DATE_FORMAT(created_at, '%Y-%m') as period, SUM(quantity) as quantity, COUNT(*) as sales_count"
+	}
+
+	rows, err := db.Model(&models.Sale{}).
+		Select(selectFormat).
+		Where("product_uuid = ? AND created_at >= ? AND created_at < ?", productUUID, startDate, endDate).
+		Group(groupBy).
+		Order("period").
+		Rows()
+
+	if err != nil {
+		return periods
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p PeriodSalesData
+		rows.Scan(&p.Period, &p.Quantity, &p.SalesCount)
+		p.PeriodLabel = formatPeriodLabel(p.Period, period)
+		periods = append(periods, p)
+	}
+
+	return periods
+}
+
+func getTopSellersForProduct(db *gorm.DB, productUUID string, startDate, endDate time.Time) []ProductSellerInfo {
+	var sellers []ProductSellerInfo
+
+	rows, err := db.Model(&models.Sale{}).
+		Select("user_uuid, users.fullname as user_name, SUM(quantity) as quantity, COUNT(*) as sales_count, MAX(sales.created_at) as last_sale").
+		Joins("JOIN users ON sales.user_uuid = users.uuid").
+		Where("product_uuid = ? AND sales.created_at >= ? AND sales.created_at < ?", productUUID, startDate, endDate).
+		Group("user_uuid, users.fullname").
+		Order("quantity DESC").
+		Limit(5).
+		Rows()
+
+	if err != nil {
+		return sellers
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var seller ProductSellerInfo
+		var lastSale time.Time
+		rows.Scan(&seller.UserUUID, &seller.UserName, &seller.Quantity, &seller.SalesCount, &lastSale)
+		seller.LastSaleDate = lastSale.Format("2006-01-02 15:04")
+		sellers = append(sellers, seller)
+	}
+
+	return sellers
+}
+
+func getProductsSoldByPerson(db *gorm.DB, userUUID string, startDate, endDate time.Time) []SalesPersonProduct {
+	var products []SalesPersonProduct
+
+	rows, err := db.Model(&models.Sale{}).
+		Select("product_uuid, products.name as product_name, SUM(quantity) as quantity, COUNT(*) as sales_count, MAX(sales.created_at) as last_sale").
+		Joins("JOIN products ON sales.product_uuid = products.uuid").
+		Where("user_uuid = ? AND sales.created_at >= ? AND sales.created_at < ?", userUUID, startDate, endDate).
+		Group("product_uuid, products.name").
+		Order("quantity DESC").
+		Rows()
+
+	if err != nil {
+		return products
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var product SalesPersonProduct
+		var lastSale time.Time
+		rows.Scan(&product.ProductUUID, &product.ProductName, &product.Quantity, &product.SalesCount, &lastSale)
+		product.LastSaleDate = lastSale.Format("2006-01-02 15:04")
+		products = append(products, product)
+	}
+
+	return products
+}
+
+func getPersonSalesByPeriod(db *gorm.DB, userUUID, period string, startDate, endDate time.Time) []PeriodSalesData {
+	var periods []PeriodSalesData
+
+	var groupBy, selectFormat string
+	switch period {
+	case "daily":
+		groupBy = "DATE(created_at)"
+		selectFormat = "DATE(created_at) as period, SUM(quantity) as quantity, COUNT(*) as sales_count"
+	case "weekly":
+		groupBy = "YEARWEEK(created_at, 1)"
+		selectFormat = "YEARWEEK(created_at, 1) as period, SUM(quantity) as quantity, COUNT(*) as sales_count"
+	case "monthly":
+		groupBy = "DATE_FORMAT(created_at, '%Y-%m')"
+		selectFormat = "DATE_FORMAT(created_at, '%Y-%m') as period, SUM(quantity) as quantity, COUNT(*) as sales_count"
+	}
+
+	rows, err := db.Model(&models.Sale{}).
+		Select(selectFormat).
+		Where("user_uuid = ? AND created_at >= ? AND created_at < ?", userUUID, startDate, endDate).
+		Group(groupBy).
+		Order("period").
+		Rows()
+
+	if err != nil {
+		return periods
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var p PeriodSalesData
+		rows.Scan(&p.Period, &p.Quantity, &p.SalesCount)
+		p.PeriodLabel = formatPeriodLabel(p.Period, period)
+		periods = append(periods, p)
+	}
+
+	return periods
+}
+
+func formatPeriodLabel(period, periodType string) string {
+	switch periodType {
+	case "daily":
+		if t, err := time.Parse("2006-01-02", period); err == nil {
+			return t.Format("Jan 02")
 		}
-
-		if provinceUUID != "" {
-			query = query.Where("province_uuid = ?", provinceUUID)
+	case "weekly":
+		return fmt.Sprintf("Week %s", period[4:])
+	case "monthly":
+		if t, err := time.Parse("2006-01", period); err == nil {
+			return t.Format("January")
 		}
+	}
+	return period
+}
 
-		var count, quantity int64
-		query.Count(&count)
-		query.Select("COALESCE(SUM(quantity), 0)").Row().Scan(&quantity)
+// Get Stock Performance Summary - Monthly breakdown for a year
+func GetStockPerformanceSummary(c *fiber.Ctx) error {
+	db := database.DB
 
-		var timeSlotName string
-		switch hour {
-		case 12:
-			timeSlotName = "12:00 PM - 1:00 PM"
-		case 15:
-			timeSlotName = "3:00 PM - 4:00 PM"
-		case 20:
-			timeSlotName = "8:00 PM - 9:00 PM"
-		}
+	year := c.Query("year", strconv.Itoa(time.Now().Year()))
+	countryUUID := c.Query("country_uuid", "")
+	provinceUUID := c.Query("province_uuid", "")
 
-		summaries = append(summaries, TimeSlotSummary{
-			TimeSlot:      timeSlotName,
-			SalesCount:    count,
-			TotalQuantity: quantity,
-			Hour:          hour,
+	targetYear, err := strconv.Atoi(year)
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Invalid year format",
 		})
 	}
 
-	return summaries
+	startDate := time.Date(targetYear, 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(targetYear+1, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	query := db.Model(&models.Sale{}).Where("created_at >= ? AND created_at < ?", startDate, endDate)
+
+	if countryUUID != "" {
+		query = query.Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
+			Where("provinces.country_uuid = ?", countryUUID)
+	}
+
+	if provinceUUID != "" {
+		query = query.Where("province_uuid = ?", provinceUUID)
+	}
+
+	// Get monthly breakdown
+	monthlyData := []map[string]interface{}{}
+
+	for month := 1; month <= 12; month++ {
+		monthStart := time.Date(targetYear, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+		monthEnd := monthStart.AddDate(0, 1, 0)
+
+		var monthlyQuantity, monthlySales int64
+
+		query.Where("created_at >= ? AND created_at < ?", monthStart, monthEnd).
+			Count(&monthlySales)
+		query.Where("created_at >= ? AND created_at < ?", monthStart, monthEnd).
+			Select("COALESCE(SUM(quantity), 0)").Row().Scan(&monthlyQuantity)
+
+		monthlyData = append(monthlyData, map[string]interface{}{
+			"month":         month,
+			"month_name":    monthStart.Format("January"),
+			"quantity_sold": monthlyQuantity,
+			"sales_count":   monthlySales,
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": fmt.Sprintf("Stock performance summary for year %d", targetYear),
+		"data": fiber.Map{
+			"year":         targetYear,
+			"monthly_data": monthlyData,
+		},
+		"filters": fiber.Map{
+			"year":          targetYear,
+			"country_uuid":  countryUUID,
+			"province_uuid": provinceUUID,
+		},
+	})
 }
 
 // Get top products by sales count
@@ -408,8 +884,7 @@ func GetSalesComparison(c *fiber.Ctx) error {
 		dayStart := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, d.Location())
 		dayEnd := dayStart.Add(24 * time.Hour)
 
-		// Get key time slots for this day
-		timeSlots := getTimeSlotSummary(db, dayStart, dayEnd, countryUUID, provinceUUID)
+		// Simple daily summary without time slots for now
 
 		// Get total for the day
 		query := db.Model(&models.Sale{}).Where("created_at >= ? AND created_at < ?", dayStart, dayEnd)
@@ -432,7 +907,6 @@ func GetSalesComparison(c *fiber.Ctx) error {
 			"day_name":       d.Format("Monday"),
 			"total_sales":    dailyCount,
 			"total_quantity": dailyQuantity,
-			"time_slots":     timeSlots,
 		})
 	}
 
