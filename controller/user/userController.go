@@ -36,7 +36,7 @@ func GetPaginatedUsers(c *fiber.Ctx) error {
 		Count(&totalRecords)
 
 	err = db.
-		Preload("Country").Preload("Province").Preload("Area").
+		Preload("Country").Preload("Province").
 		Where("fullname ILIKE ? OR title ILIKE ?", "%"+search+"%", "%"+search+"%").
 		Offset(offset).
 		Limit(limit).
@@ -92,7 +92,7 @@ func GetPaginatedNoSerach(c *fiber.Ctx) error {
 		Count(&totalRecords)
 
 	err = db.
-		Preload("Country").Preload("Province").Preload("Area").
+		Preload("Country").Preload("Province").
 		Offset(offset).
 		Limit(limit).
 		Order("users.updated_at DESC").
@@ -130,7 +130,7 @@ func GetPaginatedNoSerach(c *fiber.Ctx) error {
 func GetAllUsers(c *fiber.Ctx) error {
 	db := database.DB
 	var users []models.User
-	db.Preload("Country").Preload("Province").Preload("Area").Find(&users)
+	db.Preload("Country").Preload("Province").Find(&users)
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"message": "All users",
@@ -143,7 +143,7 @@ func GetUser(c *fiber.Ctx) error {
 	uuid := c.Params("uuid")
 	db := database.DB
 	var user models.User
-	db.Preload("Country").Preload("Province").Preload("Area").Where("uuid = ?", uuid).First(&user)
+	db.Preload("Country").Preload("Province").Where("uuid = ?", uuid).First(&user)
 	if user.Fullname == "" {
 		return c.Status(404).JSON(
 			fiber.Map{

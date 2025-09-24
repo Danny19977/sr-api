@@ -37,8 +37,8 @@ func GetPaginatedProvince(c *fiber.Ctx) error {
 
 	// Fetch paginated data
 	err = db.Where("name ILIKE ?", "%"+search+"%").Offset(offset).Limit(limit).Order("updated_at DESC").
-		Preload("Country").Preload("Areas.Users").Preload("Areas.Visites").
-		Preload("Users").Preload("Visites").
+		Preload("Country").
+		Preload("Users").
 		Find(&dataList).Error
 
 	if err != nil {
@@ -106,7 +106,7 @@ func GetPaginatedASM(c *fiber.Ctx) error {
 		Limit(limit).
 		Order("updated_at DESC").
 		Preload("Country").
-		Preload("Areas").Preload("Users").Preload("Visites").
+		Preload("Users").
 		Find(&dataList).Error
 
 	if err != nil {
@@ -142,10 +142,7 @@ func GetAllProvinces(c *fiber.Ctx) error {
 	db := database.DB
 	var data []models.Province
 	db.Preload("Country").
-		Preload("Areas.Users").
-		Preload("Areas.Visites").
 		Preload("Users").
-		Preload("Visites").
 		Find(&data)
 	return c.JSON(fiber.Map{
 		"status":  "success",
@@ -163,10 +160,7 @@ func GetAllProvinceByCountry(c *fiber.Ctx) error {
 	var data []models.Province
 
 	db.Preload("Country").
-		Preload("Areas.Users").
-		Preload("Areas.Visites").
 		Preload("Users").
-		Preload("Visites").
 		Where("country_uuid = ?", countryUUID).
 		Find(&data)
 	return c.JSON(fiber.Map{
@@ -182,10 +176,7 @@ func GetProvince(c *fiber.Ctx) error {
 	db := database.DB
 	var province models.Province
 	db.Preload("Country").
-		Preload("Areas.Users").
-		Preload("Areas.Visites").
 		Preload("Users").
-		Preload("Visites").
 		Where("uuid = ?", uuid).First(&province)
 	if province.Name == "" {
 		return c.Status(404).JSON(
@@ -211,10 +202,7 @@ func GetProvinceByName(c *fiber.Ctx) error {
 	db := database.DB
 	var province models.Province
 	db.Preload("Country").
-		Preload("Areas.Users").
-		Preload("Areas.Visites").
 		Preload("Users").
-		Preload("Visites").
 		Where("name = ?", name).First(&province)
 	if province.Name == "" {
 		return c.Status(404).JSON(

@@ -61,7 +61,6 @@ type UserPaginate struct {
 	Role       string    `json:"role"`
 	Area       string    `json:"area"`
 	Province   string    `json:"province"`
-	Sup        string    `json:"sup"`
 	Permission string    `json:"permission"`
 	Status     bool      `json:"status"`
 	Signature  string    `json:"signature"`
