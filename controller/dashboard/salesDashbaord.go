@@ -137,33 +137,90 @@ type TimeSlotSummary struct {
 	Hour          int    `json:"hour"`
 }
 
-type ProductSummary struct {
-	ProductUUID   string `json:"product_uuid"`
-	ProductName   string `json:"product_name"`
-	SalesCount    int64  `json:"sales_count"`
-	TotalQuantity int64  `json:"total_quantity"`
-}
+// Test function to check basic data and create sample data if needed
+func TestDashboardData(c *fiber.Ctx) error {
+	db := database.DB
 
-type ProvinceSummary struct {
-	ProvinceUUID  string `json:"province_uuid"`
-	ProvinceName  string `json:"province_name"`
-	CountryName   string `json:"country_name"`
-	SalesCount    int64  `json:"sales_count"`
-	TotalQuantity int64  `json:"total_quantity"`
-}
+	// Check if we have any sales data
+	var salesCount int64
+	db.Model(&models.Sale{}).Count(&salesCount)
 
-type TeamMemberSummary struct {
-	UserUUID      string     `json:"user_uuid"`
-	UserName      string     `json:"user_name"`
-	UserTitle     string     `json:"user_title"`
-	SalesCount    int64      `json:"sales_count"`
-	TotalQuantity int64      `json:"total_quantity"`
-	LastSaleTime  *time.Time `json:"last_sale_time"`
+	// Check if we have any products
+	var productsCount int64
+	db.Model(&models.Product{}).Count(&productsCount)
+
+	// Check if we have any users
+	var usersCount int64
+	db.Model(&models.User{}).Count(&usersCount)
+
+	// Note: Sample data creation can be added here if needed for testing
+	sampleDataCreated := false
+
+	// Get sample data with relationships
+	var sampleSale models.Sale
+	db.Preload("Product").Preload("User").Preload("Province").First(&sampleSale)
+
+	var sampleProduct models.Product
+	db.First(&sampleProduct)
+
+	var sampleUser models.User
+	db.First(&sampleUser)
+
+	// Test a simple join query to see what field names work
+	var testResult struct {
+		UserUUID    string `json:"user_uuid"`
+		UserName    string `json:"user_name"`
+		ProductName string `json:"product_name"`
+		Quantity    int64  `json:"quantity"`
+	}
+
+	err := db.Table("sales").
+		Select("sales.user_uuid, users.fullname as user_name, products.name as product_name, sales.quantity").
+		Joins("LEFT JOIN users ON sales.user_uuid = users.uuid").
+		Joins("LEFT JOIN products ON sales.product_uuid = products.uuid").
+		First(&testResult).Error
+
+	var sqlError string
+	if err != nil {
+		sqlError = err.Error()
+	}
+
+	return c.JSON(fiber.Map{
+		"status":  "success",
+		"message": "Dashboard data test",
+		"data": fiber.Map{
+			"sales_count":         salesCount,
+			"products_count":      productsCount,
+			"users_count":         usersCount,
+			"sample_sale":         sampleSale,
+			"sample_product":      sampleProduct,
+			"sample_user":         sampleUser,
+			"test_join":           testResult,
+			"sql_error":           sqlError,
+			"sample_data_created": sampleDataCreated,
+		},
+	})
 }
 
 // Main Sales Analytics Dashboard - Focused on stock sales insights
 func GetSalesAnalytics(c *fiber.Ctx) error {
 	db := database.DB
+
+	// First check if we have any sales data at all
+	var totalSalesCount int64
+	db.Model(&models.Sale{}).Count(&totalSalesCount)
+
+	if totalSalesCount == 0 {
+		return c.JSON(fiber.Map{
+			"status":  "success",
+			"message": "No sales data available in the database",
+			"data": fiber.Map{
+				"total_sales": 0,
+				"message":     "Please add some sales data first to see analytics",
+				"suggestion":  "Use POST /api/sales/create to add sales data",
+			},
+		})
+	}
 
 	// Get parameters
 	period := c.Query("period", "daily") // daily, weekly, monthly
@@ -210,6 +267,28 @@ func GetSalesAnalytics(c *fiber.Ctx) error {
 		baseQuery = baseQuery.Where("province_uuid = ?", provinceUUID)
 	}
 
+	// Check if we have any sales in this period
+	var periodSalesCount int64
+	baseQuery.Count(&periodSalesCount)
+
+	if periodSalesCount == 0 {
+		return c.JSON(fiber.Map{
+			"status":  "success",
+			"message": fmt.Sprintf("No sales data found for %s period in year %d", period, targetYear),
+			"data": fiber.Map{
+				"total_sales_all_time": totalSalesCount,
+				"period_sales":         0,
+				"period":               period,
+				"year":                 targetYear,
+				"filters": fiber.Map{
+					"country_uuid":  countryUUID,
+					"province_uuid": provinceUUID,
+				},
+				"message": "Try different filters or time period",
+			},
+		})
+	}
+
 	// Get analytics data
 	dateRange := DateRange{
 		StartDate: startDate.Format("2006-01-02"),
@@ -237,6 +316,10 @@ func GetSalesAnalytics(c *fiber.Ctx) error {
 		"status":  "success",
 		"message": fmt.Sprintf("Sales analytics for %s period in year %d", period, targetYear),
 		"data":    analytics,
+		"meta": fiber.Map{
+			"total_sales_all_time": totalSalesCount,
+			"period_sales":         periodSalesCount,
+		},
 		"filters": fiber.Map{
 			"period":        period,
 			"year":          targetYear,
@@ -671,56 +754,6 @@ func GetStockPerformanceSummary(c *fiber.Ctx) error {
 	})
 }
 
-// Get top products by sales count
-func getTopProducts(db *gorm.DB, startOfDay, endOfDay time.Time, countryUUID, provinceUUID string, limit int) []ProductSummary {
-	var products []ProductSummary
-
-	query := db.Model(&models.Sale{}).
-		Select("product_uuid, products.name as product_name, COUNT(*) as sales_count, SUM(quantity) as total_quantity").
-		Joins("JOIN products ON sales.product_uuid = products.uuid").
-		Where("sales.created_at >= ? AND sales.created_at < ?", startOfDay, endOfDay).
-		Group("product_uuid, products.name").
-		Order("sales_count DESC").
-		Limit(limit)
-
-	if countryUUID != "" {
-		query = query.Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
-			Where("provinces.country_uuid = ?", countryUUID)
-	}
-
-	if provinceUUID != "" {
-		query = query.Where("sales.province_uuid = ?", provinceUUID)
-	}
-
-	query.Scan(&products)
-	return products
-}
-
-// Get top provinces by sales count
-func getTopProvinces(db *gorm.DB, startOfDay, endOfDay time.Time, countryUUID, provinceUUID string, limit int) []ProvinceSummary {
-	var provinces []ProvinceSummary
-
-	query := db.Model(&models.Sale{}).
-		Select("provinces.uuid as province_uuid, provinces.name as province_name, countries.name as country_name, COUNT(*) as sales_count, SUM(quantity) as total_quantity").
-		Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
-		Joins("JOIN countries ON provinces.country_uuid = countries.uuid").
-		Where("sales.created_at >= ? AND sales.created_at < ?", startOfDay, endOfDay).
-		Group("provinces.uuid, provinces.name, countries.name").
-		Order("sales_count DESC").
-		Limit(limit)
-
-	if countryUUID != "" {
-		query = query.Where("provinces.country_uuid = ?", countryUUID)
-	}
-
-	if provinceUUID != "" {
-		query = query.Where("sales.province_uuid = ?", provinceUUID)
-	}
-
-	query.Scan(&provinces)
-	return provinces
-}
-
 // Get recent sales
 func getRecentSales(db *gorm.DB, countryUUID, provinceUUID string, limit int) []models.Sale {
 	var sales []models.Sale
@@ -740,30 +773,6 @@ func getRecentSales(db *gorm.DB, countryUUID, provinceUUID string, limit int) []
 
 	query.Find(&sales)
 	return sales
-}
-
-// Get team performance
-func getTeamPerformance(db *gorm.DB, startOfDay, endOfDay time.Time, countryUUID, provinceUUID string) []TeamMemberSummary {
-	var team []TeamMemberSummary
-
-	query := db.Model(&models.Sale{}).
-		Select("users.uuid as user_uuid, users.fullname as user_name, users.title as user_title, COUNT(*) as sales_count, SUM(quantity) as total_quantity, MAX(sales.created_at) as last_sale_time").
-		Joins("JOIN users ON sales.user_uuid = users.uuid").
-		Where("sales.created_at >= ? AND sales.created_at < ?", startOfDay, endOfDay).
-		Group("users.uuid, users.fullname, users.title").
-		Order("sales_count DESC")
-
-	if countryUUID != "" {
-		query = query.Joins("JOIN provinces ON sales.province_uuid = provinces.uuid").
-			Where("provinces.country_uuid = ?", countryUUID)
-	}
-
-	if provinceUUID != "" {
-		query = query.Where("sales.province_uuid = ?", provinceUUID)
-	}
-
-	query.Scan(&team)
-	return team
 }
 
 // Get detailed time-based sales analysis

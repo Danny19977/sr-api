@@ -91,6 +91,7 @@ func Setup(app *fiber.App) {
 	// Dashboard controller - Protected routes - Focused on stock sales analytics
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
+	dash.Get("/test", dashboard.TestDashboardData)
 	dash.Get("/analytics", dashboard.GetSalesAnalytics)
 	dash.Get("/stock-performance", dashboard.GetStockPerformanceSummary)
 	dash.Get("/time-analysis", dashboard.GetDetailedTimeAnalysis)
