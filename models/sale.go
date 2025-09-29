@@ -10,9 +10,9 @@ type Sale struct {
 
 	ProvinceUUID string    `json:"province_uuid" gorm:"not null"`
 	ProductUUID  string    `json:"product_uuid" gorm:"not null"`
-	YearUUID     string    `json:"year_uuid" gorm:"not null"`
-	MonthUUID    string    `json:"month_uuid" gorm:"not null"`
-	WeekUUID     string    `json:"week_uuid" gorm:"not null"`
+	YearUUID     string    `json:"year_uuid"`
+	MonthUUID    string    `json:"month_uuid"`
+	WeekUUID     string    `json:"week_uuid"`
 
 	UserUUID     string    `json:"user_uuid" gorm:"not null"`
 	Quantity     int64     `json:"quantity" gorm:"not null"`
