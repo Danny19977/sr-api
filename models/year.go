@@ -8,9 +8,8 @@ type Year struct {
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt time.Time `json:"deleted_at" gorm:"autoDeleteTime"`
 
-	Year int64 `json:"year" gorm:"not null;unique"`
-	Quantity int64  `json:"quantity" gorm:"not null"`
-	Role string `json:"role" gorm:"type:varchar(255);not null"`
+	Year string `json:"year" gorm:"not null;unique"`
+	Quantity string  `json:"quantity" gorm:"not null"`
 
 	Signature string `json:"signature"`  
 }
