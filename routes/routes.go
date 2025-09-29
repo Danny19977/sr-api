@@ -4,11 +4,14 @@ import (
 	"github.com/Danny19977/sr-api/controller/auth"
 	"github.com/Danny19977/sr-api/controller/country"
 	"github.com/Danny19977/sr-api/controller/dashboard"
+	monthController "github.com/Danny19977/sr-api/controller/month"
 	"github.com/Danny19977/sr-api/controller/product"
 	"github.com/Danny19977/sr-api/controller/province"
 	Sale "github.com/Danny19977/sr-api/controller/sale"
 	"github.com/Danny19977/sr-api/controller/user"
 	"github.com/Danny19977/sr-api/controller/userlog"
+	weekController "github.com/Danny19977/sr-api/controller/week"
+	yearController "github.com/Danny19977/sr-api/controller/year"
 	"github.com/Danny19977/sr-api/middlewares"
 	"github.com/gofiber/fiber/v2"
 )
@@ -110,4 +113,30 @@ func Setup(app *fiber.App) {
 	sale.Post("/create", Sale.CreateSale)
 	sale.Put("/update/:uuid", Sale.UpdateSale)
 	sale.Delete("/delete/:uuid", Sale.DeleteSale)
+	// Year controller - Protected routes
+	yearGroup := api.Group("/years")
+	yearGroup.Use(middlewares.IsAuthenticated)
+	yearGroup.Get("/all", yearController.GetAllYears)
+	yearGroup.Get("/get/:uuid", yearController.GetYear)
+	yearGroup.Post("/create", yearController.CreateYear)
+	yearGroup.Put("/update/:uuid", yearController.UpdateYear)
+	yearGroup.Delete("/delete/:uuid", yearController.DeleteYear)
+
+	// Month controller - Protected routes
+	monthGroup := api.Group("/months")
+	monthGroup.Use(middlewares.IsAuthenticated)
+	monthGroup.Get("/all", monthController.GetAllMonths)
+	monthGroup.Get("/get/:uuid", monthController.GetMonth)
+	monthGroup.Post("/create", monthController.CreateMonth)
+	monthGroup.Put("/update/:uuid", monthController.UpdateMonth)
+	monthGroup.Delete("/delete/:uuid", monthController.DeleteMonth)
+
+	// Week controller - Protected routes
+	weekGroup := api.Group("/weeks")
+	weekGroup.Use(middlewares.IsAuthenticated)
+	weekGroup.Get("/all", weekController.GetAllWeeks)
+	weekGroup.Get("/get/:uuid", weekController.GetWeek)
+	weekGroup.Post("/create", weekController.CreateWeek)
+	weekGroup.Put("/update/:uuid", weekController.UpdateWeek)
+	weekGroup.Delete("/delete/:uuid", weekController.DeleteWeek)
 }

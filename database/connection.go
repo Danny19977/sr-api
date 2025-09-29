@@ -40,5 +40,8 @@ func Connect() {
 		&models.UserLogs{},
 		&models.Notification{},
 		&models.PasswordReset{},
+		&models.Year{},
+		&models.Month{},
+		&models.Week{},
 	)
 }
