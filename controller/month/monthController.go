@@ -147,8 +147,9 @@ func UpdateMonth(c *fiber.Ctx) error {
 	type UpdateData struct {
 		UUID         string `json:"uuid"`
 		Month        string `json:"month"`
-		Quantity     int64  `json:"quantity"`
+		Quantity     string `json:"quantity"`
 		Role         string `json:"role"`
+		CountryUUID  string `json:"country_uuid"`
 		ProvinceUUID string `json:"province_uuid"`
 		ProductUUID  string `json:"product_uuid"`
 		YearUUID     string `json:"year_uuid"`
@@ -172,6 +173,7 @@ func UpdateMonth(c *fiber.Ctx) error {
 	month.Month = updateData.Month
 	month.Quantity = updateData.Quantity
 	month.Role = updateData.Role
+	month.CountryUUID = updateData.CountryUUID
 	month.ProvinceUUID = updateData.ProvinceUUID
 	month.ProductUUID = updateData.ProductUUID
 	month.YearUUID = updateData.YearUUID

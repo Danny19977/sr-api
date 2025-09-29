@@ -113,6 +113,7 @@ func Setup(app *fiber.App) {
 	sale.Post("/create", Sale.CreateSale)
 	sale.Put("/update/:uuid", Sale.UpdateSale)
 	sale.Delete("/delete/:uuid", Sale.DeleteSale)
+	
 	// Year controller - Protected routes
 	yearGroup := api.Group("/years")
 	yearGroup.Use(middlewares.IsAuthenticated)

@@ -8,13 +8,13 @@ type Month struct {
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt time.Time `json:"deleted_at" gorm:"autoDeleteTime"`
 
-	Month string `json:"month" gorm:"not null;unique"`
-	Quantity int64  `json:"quantity" gorm:"not null"`
-	Role string `json:"role" gorm:"type:varchar(255);not null"`
+	Month     string `json:"month"`
+	Quantity  string `json:"quantity" gorm:"not null"`
+	Role      string `json:"role" gorm:"type:varchar(255);not null"`
 	Signature string `json:"signature"`
 
+	CountryUUID  string `json:"country_uuid" gorm:"type:varchar(255)"`
 	ProvinceUUID string `json:"province_uuid" gorm:"type:varchar(255)"`
 	ProductUUID  string `json:"product_uuid" gorm:"type:varchar(255)"`
-	YearUUID	 string `json:"year_uuid" gorm:"type:varchar(255)"`
-
+	YearUUID     string `json:"year_uuid" gorm:"type:varchar(255)"`
 }
