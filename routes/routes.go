@@ -91,17 +91,10 @@ func Setup(app *fiber.App) {
 	prod.Put("/update/:uuid", product.UpdateProduct)
 	prod.Delete("/delete/:uuid", product.DeleteProduct)
 
-	// Dashboard controller - Protected routes - Focused on stock sales analytics
+	// Dashboard controller - Protected routes - Sales area dashboard only
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
-	dash.Get("/test", dashboard.TestDashboardData)
-	dash.Get("/analytics", dashboard.GetSalesAnalytics)
-	dash.Get("/stock-performance", dashboard.GetStockPerformanceSummary)
-	dash.Get("/time-analysis", dashboard.GetDetailedTimeAnalysis)
-	dash.Get("/sales-comparison", dashboard.GetSalesComparison)
-	dash.Get("/real-time", dashboard.GetRealTimeDashboard)
-	dash.Get("/filters", dashboard.GetDashboardFilters)
-	dash.Get("/team-overview", dashboard.GetManagerTeamOverview)
+	dash.Get("/area-sales", dashboard.GetAreaSalesDashboard)
 
 	// Sale controller - Protected routes
 	sale := api.Group("/sales")
@@ -113,7 +106,7 @@ func Setup(app *fiber.App) {
 	sale.Post("/create", Sale.CreateSale)
 	sale.Put("/update/:uuid", Sale.UpdateSale)
 	sale.Delete("/delete/:uuid", Sale.DeleteSale)
-	
+
 	// Year controller - Protected routes
 	yearGroup := api.Group("/years")
 	yearGroup.Use(middlewares.IsAuthenticated)
