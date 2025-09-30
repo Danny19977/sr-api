@@ -12,6 +12,7 @@ type Week struct {
 	Quantity int64  `json:"quantity" gorm:"not null"`
 	Role string `json:"role" gorm:"type:varchar(255);not null"`
 
+	CountryUUID  string `json:"country_uuid" gorm:"type:varchar(255)"`
 	ProvinceUUID string `json:"province_uuid" gorm:"type:varchar(255)"`
 	ProductUUID  string `json:"product_uuid" gorm:"type:varchar(255)"`
 	MonthUUID    string `json:"month_uuid" gorm:"type:varchar(255)"`
