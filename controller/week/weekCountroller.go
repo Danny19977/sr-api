@@ -1,6 +1,7 @@
 package week
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/Danny19977/sr-api/database"
@@ -124,11 +125,27 @@ func CreateWeek(c *fiber.Ctx) error {
 	p := &models.Week{}
 
 	if err := c.BodyParser(&p); err != nil {
-		return err
+		return c.Status(400).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Invalid request body",
+			"error":   err.Error(),
+		})
 	}
 
 	p.UUID = uuid.New().String()
-	database.DB.Create(p)
+
+	// Log the parsed struct for diagnostics
+	fmt.Printf("Parsed week struct: %+v\n", p)
+
+	result := database.DB.Create(p)
+	if result.Error != nil {
+		return c.Status(500).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Failed to create week",
+			"error":   result.Error.Error(),
+			"data":    p,
+		})
+	}
 
 	return c.JSON(
 		fiber.Map{
@@ -147,7 +164,7 @@ func UpdateWeek(c *fiber.Ctx) error {
 	type UpdateData struct {
 		UUID         string `json:"uuid"`
 		Week         string `json:"week"`
-		Quantity     int64  `json:"quantity"`
+		Quantity     string `json:"quantity"`
 		Role         string `json:"role"`
 		ProvinceUUID string `json:"province_uuid"`
 		ProductUUID  string `json:"product_uuid"`
