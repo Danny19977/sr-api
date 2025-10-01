@@ -24,6 +24,10 @@ type OverallSummaryDashboard struct {
 	BottomPerformingProvinces []ProvinceRanking       `json:"bottom_performing_provinces"`
 	MonthlyAggregateProgress  []MonthlyAggregate      `json:"monthly_aggregate_progress"`
 	AchievementDistribution   AchievementDistribution `json:"achievement_distribution"`
+	TotalRevenue              float64                 `json:"totalRevenue"`
+	TotalUsers                int64                   `json:"totalUsers"`
+	TotalCountries            int64                   `json:"totalCountries"`
+	TotalProducts             int64                   `json:"totalProducts"`
 }
 
 type ProvinceRanking struct {
@@ -298,6 +302,29 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 		overallProgressPercentage = (float64(totalAchieved) / float64(totalYearObjective)) * 100
 	}
 
+	// Calculate total revenue
+	var totalRevenue float64
+	revenueQuery := db.Model(&models.Sale{})
+	if !startDate.IsZero() {
+		revenueQuery = revenueQuery.Where("created_at >= ?", startDate)
+	}
+	if !endDate.IsZero() {
+		revenueQuery = revenueQuery.Where("created_at <= ?", endDate)
+	}
+	revenueQuery.Select("COALESCE(SUM(total_price), 0)").Scan(&totalRevenue)
+
+	// Count total users
+	var totalUsers int64
+	db.Model(&models.User{}).Count(&totalUsers)
+
+	// Count total countries
+	var totalCountries int64
+	db.Model(&models.Country{}).Count(&totalCountries)
+
+	// Count total products
+	var totalProducts int64
+	db.Model(&models.Product{}).Count(&totalProducts)
+
 	result := OverallSummaryDashboard{
 		TotalProvinces:            totalProvinces,
 		Year:                      yearParam,
@@ -311,6 +338,10 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 		BottomPerformingProvinces: bottomPerforming,
 		MonthlyAggregateProgress:  monthlyProgress,
 		AchievementDistribution:   achievementDist,
+		TotalRevenue:              totalRevenue,
+		TotalUsers:                totalUsers,
+		TotalCountries:            totalCountries,
+		TotalProducts:             totalProducts,
 	}
 
 	return c.JSON(fiber.Map{
