@@ -97,6 +97,25 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 
 	yearParam := c.Query("year", strconv.Itoa(time.Now().Year()))
 
+	// Parse filter query parameters
+	var startDate time.Time
+	var endDate time.Time
+	var err error
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+	if startDateStr != "" {
+		startDate, err = time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid start_date format. Use YYYY-MM-DD."})
+		}
+	}
+	if endDateStr != "" {
+		endDate, err = time.Parse("2006-01-02", endDateStr)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid end_date format. Use YYYY-MM-DD."})
+		}
+	}
+
 	// Get all provinces
 	var provinces []models.Province
 	if err := db.Find(&provinces).Error; err != nil {
@@ -127,10 +146,14 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 
 		// Calculate achieved
 		var achieved int64
-		db.Model(&models.Sale{}).
-			Where("province_uuid = ? AND EXTRACT(YEAR FROM created_at) = ?", province.UUID, yearParam).
-			Select("COALESCE(SUM(quantity), 0)").
-			Scan(&achieved)
+		query := db.Model(&models.Sale{}).Where("province_uuid = ? AND EXTRACT(YEAR FROM created_at) = ?", province.UUID, yearParam)
+		if !startDate.IsZero() {
+			query = query.Where("created_at >= ?", startDate)
+		}
+		if !endDate.IsZero() {
+			query = query.Where("created_at <= ?", endDate)
+		}
+		query.Select("COALESCE(SUM(quantity), 0)").Scan(&achieved)
 
 		totalYearObjective += yearObjective
 		totalAchieved += achieved
@@ -225,11 +248,16 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 
 		for _, province := range provinces {
 			var provinceMonthlySales int64
-			db.Model(&models.Sale{}).
+			query := db.Model(&models.Sale{}).
 				Where("province_uuid = ? AND EXTRACT(YEAR FROM created_at) = ? AND EXTRACT(MONTH FROM created_at) = ?",
-					province.UUID, yearParam, month).
-				Select("COALESCE(SUM(quantity), 0)").
-				Scan(&provinceMonthlySales)
+					province.UUID, yearParam, month)
+			if !startDate.IsZero() {
+				query = query.Where("created_at >= ?", startDate)
+			}
+			if !endDate.IsZero() {
+				query = query.Where("created_at <= ?", endDate)
+			}
+			query.Select("COALESCE(SUM(quantity), 0)").Scan(&provinceMonthlySales)
 
 			monthlyTotal += provinceMonthlySales
 

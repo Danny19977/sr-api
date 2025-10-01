@@ -32,9 +32,33 @@ type AreaSalesDashboard struct {
 func GetAreaSalesDashboard(c *fiber.Ctx) error {
 	db := database.DB
 
-	// Get all provinces (areas)
+	// Parse filter query parameters
+	var startDate time.Time
+	var endDate time.Time
+	var err error
+	startDateStr := c.Query("start_date")
+	endDateStr := c.Query("end_date")
+	provinceUUID := c.Query("province_uuid")
+	if startDateStr != "" {
+		startDate, err = time.Parse("2006-01-02", startDateStr)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid start_date format. Use YYYY-MM-DD."})
+		}
+	}
+	if endDateStr != "" {
+		endDate, err = time.Parse("2006-01-02", endDateStr)
+		if err != nil {
+			return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "Invalid end_date format. Use YYYY-MM-DD."})
+		}
+	}
+
+	// Get all provinces (areas), or filter by province_uuid
 	var provinces []models.Province
-	if err := db.Find(&provinces).Error; err != nil {
+	provinceQuery := db
+	if provinceUUID != "" {
+		provinceQuery = provinceQuery.Where("uuid = ?", provinceUUID)
+	}
+	if err := provinceQuery.Find(&provinces).Error; err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch provinces"})
 	}
 
@@ -47,11 +71,14 @@ func GetAreaSalesDashboard(c *fiber.Ctx) error {
 		var totalSold int64 = 0
 		for i, day := range days {
 			var dayTotal int64
-			// Query sales for this province and day (assuming CreatedAt.Weekday())
-			db.Model(&models.Sale{}).
-				Where("province_uuid = ? AND EXTRACT(DOW FROM created_at) = ?", province.UUID, (i+1)%7).
-				Select("COALESCE(SUM(quantity),0)").
-				Scan(&dayTotal)
+			query := db.Model(&models.Sale{}).Where("province_uuid = ? AND EXTRACT(DOW FROM created_at) = ?", province.UUID, (i+1)%7)
+			if !startDate.IsZero() {
+				query = query.Where("created_at >= ?", startDate)
+			}
+			if !endDate.IsZero() {
+				query = query.Where("created_at <= ?", endDate)
+			}
+			query.Select("COALESCE(SUM(quantity),0)").Scan(&dayTotal)
 			salesByDay[day] = dayTotal
 			totalSold += dayTotal
 		}
