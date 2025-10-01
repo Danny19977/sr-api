@@ -5,6 +5,7 @@ import (
 
 	"github.com/Danny19977/sr-api/database"
 	"github.com/Danny19977/sr-api/models"
+	"github.com/Danny19977/sr-api/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -30,16 +31,19 @@ func GetPaginatedProvince(c *fiber.Ctx) error {
 	var dataList []models.Province
 	var totalRecords int64
 
-	// Count total records matching the search query
-	db.Model(&models.Province{}).
-		Where("name ILIKE ?", "%"+search+"%").
-		Count(&totalRecords)
+	userUUID, _ := utils.GetUserUUIDFromToken(c)
+	var requestingUser models.User
+	db.Where("uuid = ?", userUUID).First(&requestingUser)
 
-	// Fetch paginated data
-	err = db.Where("name ILIKE ?", "%"+search+"%").Offset(offset).Limit(limit).Order("updated_at DESC").
-		Preload("Country").
-		Preload("Users").
-		Find(&dataList).Error
+	query := db.Model(&models.Province{})
+	if requestingUser.Role == "ASM" {
+		query = query.Where("uuid = ?", requestingUser.ProvinceUUID)
+	}
+	query = query.Where("name ILIKE ?", "%"+search+"%")
+	query.Count(&totalRecords)
+
+	query = query.Offset(offset).Limit(limit).Order("updated_at DESC").Preload("Country").Preload("Users")
+	err = query.Find(&dataList).Error
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

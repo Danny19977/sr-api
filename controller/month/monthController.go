@@ -5,6 +5,7 @@ import (
 
 	"github.com/Danny19977/sr-api/database"
 	"github.com/Danny19977/sr-api/models"
+	"github.com/Danny19977/sr-api/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -28,12 +29,19 @@ func GetPaginatedMonth(c *fiber.Ctx) error {
 	var dataList []models.Month
 	var totalRecords int64
 
-	db.Model(&models.Month{}).
-		Where("month ILIKE ?", "%"+search+"%").
-		Count(&totalRecords)
+	userUUID, _ := utils.GetUserUUIDFromToken(c)
+	var requestingUser models.User
+	database.DB.Where("uuid = ?", userUUID).First(&requestingUser)
 
-	err = db.Where("month ILIKE ?", "%"+search+"%").Offset(offset).Limit(limit).Order("updated_at DESC").
-		Find(&dataList).Error
+	query := db.Model(&models.Month{})
+	if requestingUser.Role == "ASM" {
+		query = query.Where("province_uuid = ?", requestingUser.ProvinceUUID)
+	}
+	query = query.Where("month ILIKE ?", "%"+search+"%")
+	query.Count(&totalRecords)
+
+	query = query.Offset(offset).Limit(limit).Order("updated_at DESC")
+	err = query.Find(&dataList).Error
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

@@ -16,5 +16,4 @@ type Country struct {
 	// Use slices, not pointer to slices, for GORM relations
 	Users     []User     `gorm:"foreignKey:CountryUUID;references:UUID"`
 	Provinces []Province `gorm:"foreignKey:CountryUUID;references:UUID"`
-	Objective []Objective `gorm:"foreignKey:CountryUUID;references:UUID"`
 }

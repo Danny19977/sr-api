@@ -30,18 +30,34 @@ func GetPaginatedUsers(c *fiber.Ctx) error {
 	var users []models.User
 	var totalRecords int64
 
-	// Count total records matching the search query
-	db.Model(&models.User{}).
-		Where("fullname ILIKE ? OR title ILIKE ?", "%"+search+"%", "%"+search+"%").
-		Count(&totalRecords)
+	// Get user UUID from JWT
+	userUUID, _ := utils.GetUserUUIDFromToken(c)
+	var requestingUser models.User
+	db.Where("uuid = ?", userUUID).First(&requestingUser)
 
-	err = db.
-		Preload("Country").Preload("Province").
-		Where("fullname ILIKE ? OR title ILIKE ?", "%"+search+"%", "%"+search+"%").
+	query := db.Model(&models.User{})
+	if requestingUser.Role == "ASM" {
+		query = query.Where("province_uuid = ?", requestingUser.ProvinceUUID)
+	}
+	query = query.Where("fullname ILIKE ? OR title ILIKE ?", "%"+search+"%", "%"+search+"%")
+	query.Count(&totalRecords)
+
+	// Use the same query for fetching users
+	query = query.Preload("Country").Preload("Province").
 		Offset(offset).
 		Limit(limit).
-		Order("users.updated_at DESC").
-		Find(&users).Error
+		Order("users.updated_at DESC")
+	err = query.Find(&users).Error
+	// If ASM, filter users by province
+	if requestingUser.Role == "ASM" {
+		filtered := []models.User{}
+		for _, u := range users {
+			if u.ProvinceUUID != nil && requestingUser.ProvinceUUID != nil && *u.ProvinceUUID == *requestingUser.ProvinceUUID {
+				filtered = append(filtered, u)
+			}
+		}
+		users = filtered
+	}
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

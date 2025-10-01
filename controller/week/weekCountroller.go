@@ -6,6 +6,7 @@ import (
 
 	"github.com/Danny19977/sr-api/database"
 	"github.com/Danny19977/sr-api/models"
+	"github.com/Danny19977/sr-api/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -29,12 +30,19 @@ func GetPaginatedWeek(c *fiber.Ctx) error {
 	var dataList []models.Week
 	var totalRecords int64
 
-	db.Model(&models.Week{}).
-		Where("week ILIKE ?", "%"+search+"%").
-		Count(&totalRecords)
+	userUUID, _ := utils.GetUserUUIDFromToken(c)
+	var requestingUser models.User
+	db.Where("uuid = ?", userUUID).First(&requestingUser)
 
-	err = db.Where("week ILIKE ?", "%"+search+"%").Offset(offset).Limit(limit).Order("updated_at DESC").
-		Find(&dataList).Error
+	query := db.Model(&models.Week{})
+	if requestingUser.Role == "ASM" {
+		query = query.Where("province_uuid = ?", requestingUser.ProvinceUUID)
+	}
+	query = query.Where("week ILIKE ?", "%"+search+"%")
+	query.Count(&totalRecords)
+
+	query = query.Offset(offset).Limit(limit).Order("updated_at DESC")
+	err = query.Find(&dataList).Error
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{

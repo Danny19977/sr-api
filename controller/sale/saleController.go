@@ -5,6 +5,7 @@ import (
 
 	"github.com/Danny19977/sr-api/database"
 	"github.com/Danny19977/sr-api/models"
+	"github.com/Danny19977/sr-api/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -28,10 +29,20 @@ func GetPaginatedSale(c *fiber.Ctx) error {
 	var dataList []models.Sale
 	var totalRecords int64
 
-	countQuery := db.Model(&models.Sale{}).Where("user_uuid ILIKE ?", "%"+search+"%") // Example: search by user_uuid
+	userUUID, _ := utils.GetUserUUIDFromToken(c)
+	var requestingUser models.User
+	db.Where("uuid = ?", userUUID).First(&requestingUser)
+
+	countQuery := db.Model(&models.Sale{})
+	query := db.Model(&models.Sale{})
+	if requestingUser.Role == "ASM" {
+		countQuery = countQuery.Where("province_uuid = ?", requestingUser.ProvinceUUID)
+		query = query.Where("province_uuid = ?", requestingUser.ProvinceUUID)
+	}
+	countQuery = countQuery.Where("user_uuid ILIKE ?", "%"+search+"%")
 	countQuery.Count(&totalRecords)
 
-	query := db.Where("user_uuid ILIKE ?", "%"+search+"%")
+	query = query.Where("user_uuid ILIKE ?", "%"+search+"%")
 	query = query.Offset(offset)
 	query = query.Limit(limit)
 	query = query.Order("updated_at DESC")
