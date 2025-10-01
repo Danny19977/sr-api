@@ -91,10 +91,15 @@ func Setup(app *fiber.App) {
 	prod.Put("/update/:uuid", product.UpdateProduct)
 	prod.Delete("/delete/:uuid", product.DeleteProduct)
 
-	// Dashboard controller - Protected routes - Sales area dashboard only
+	// Dashboard controller - Protected routes - Sales area dashboard and year objectives
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
 	dash.Get("/area-sales", dashboard.GetAreaSalesDashboard)
+	dash.Get("/year-objectives", dashboard.GetYearObjectiveComparison)
+	dash.Get("/year-objectives/table", dashboard.GetYearObjectiveComparisonTable)
+	dash.Get("/province-year-summary", dashboard.GetProvinceYearSummary)
+	dash.Get("/overall-summary", dashboard.GetOverallSummaryDashboard)
+	dash.Get("/comparison-summary", dashboard.GetComparisonSummary)
 
 	// Sale controller - Protected routes
 	sale := api.Group("/sales")
