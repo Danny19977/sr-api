@@ -35,21 +35,46 @@ type User struct {
 }
 
 type UserResponse struct {
-	UUID         string  `json:"uuid"`
-	Fullname     string  `json:"fullname"`
-	Email        string  `json:"email"`
-	Phone        string  `json:"phone"`
-	Title        string  `json:"title"`
-	Role         string  `json:"role"`
-	CountryUUID  *string `json:"country_uuid" gorm:"type:varchar(255)"`
-	Country      *Country
-	ProvinceUUID *string `json:"province_uuid" gorm:"type:varchar(255)"`
-	Province     *Province
-	Permission   string `json:"permission"`
-	Status       bool   `json:"status"`
-	Signature    string `json:"signature"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	UUID       string    `json:"uuid"`
+	Fullname   string    `json:"fullname"`
+	Email      string    `json:"email"`
+	Phone      string    `json:"phone"`
+	Title      string    `json:"title"`
+	Role       string    `json:"role"`
+	Country    Country   `json:"country"`
+	Province   Province  `json:"province"`
+	Permission string    `json:"permission"`
+	Status     bool      `json:"status"`
+	Signature  string    `json:"signature"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// Helper to convert User to UserResponse with full related objects
+func (u *User) ToUserResponse() UserResponse {
+	country := Country{}
+	if u.Country != nil {
+		country = *u.Country
+	}
+	province := Province{}
+	if u.Province != nil {
+		province = *u.Province
+	}
+	return UserResponse{
+		UUID:       u.UUID,
+		Fullname:   u.Fullname,
+		Email:      u.Email,
+		Phone:      u.Phone,
+		Title:      u.Title,
+		Role:       u.Role,
+		Country:    country,
+		Province:   province,
+		Permission: u.Permission,
+		Status:     u.Status,
+		Signature:  u.Signature,
+		CreatedAt:  u.CreatedAt,
+		UpdatedAt:  u.UpdatedAt,
+	}
 }
 
 type UserPaginate struct {
@@ -67,6 +92,8 @@ type UserPaginate struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
+
+// ...existing code...
 
 type Login struct {
 	Identifier string `json:"identifier" validate:"required"`
@@ -92,6 +119,6 @@ func (u *User) Count(db *gorm.DB) int64 {
 
 func (u *User) Paginate(db *gorm.DB, limit int, offset int) interface{} {
 	su := []User{}
-	db.Preload("Province").Offset(offset).Limit(limit).Find(&su)
+	db.Preload("Country").Preload("Province").Offset(offset).Limit(limit).Find(&su)
 	return su
 }

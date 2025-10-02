@@ -41,7 +41,7 @@ func GetPaginatedMonth(c *fiber.Ctx) error {
 	query.Count(&totalRecords)
 
 	query = query.Offset(offset).Limit(limit).Order("updated_at DESC")
-	err = query.Find(&dataList).Error
+	err = query.Preload("Country").Preload("Province").Find(&dataList).Error
 
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{
@@ -71,7 +71,7 @@ func GetPaginatedMonth(c *fiber.Ctx) error {
 func GetAllMonths(c *fiber.Ctx) error {
 	db := database.DB
 	var data []models.Month
-	db.Find(&data)
+	db.Preload("Country").Preload("Province").Find(&data)
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"message": "All months support",
@@ -84,7 +84,7 @@ func GetMonth(c *fiber.Ctx) error {
 	uuid := c.Params("uuid")
 	db := database.DB
 	var month models.Month
-	db.Where("uuid = ?", uuid).First(&month)
+	db.Preload("Country").Preload("Province").Where("uuid = ?", uuid).First(&month)
 	if month.Month == "" {
 		return c.Status(404).JSON(
 			fiber.Map{
@@ -108,7 +108,7 @@ func GetMonthByMonthString(c *fiber.Ctx) error {
 	monthStr := c.Params("month")
 	db := database.DB
 	var month models.Month
-	db.Where("month = ?", monthStr).First(&month)
+	db.Preload("Country").Preload("Province").Where("month = ?", monthStr).First(&month)
 	if month.Month == "" {
 		return c.Status(404).JSON(
 			fiber.Map{

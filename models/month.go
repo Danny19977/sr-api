@@ -13,8 +13,10 @@ type Month struct {
 	Role      string `json:"role" gorm:"type:varchar(255);not null"`
 	Signature string `json:"signature"`
 
-	CountryUUID  string `json:"country_uuid" gorm:"type:varchar(255)"`
-	ProvinceUUID string `json:"province_uuid" gorm:"type:varchar(255)"`
-	ProductUUID  string `json:"product_uuid" gorm:"type:varchar(255)"`
-	YearUUID     string `json:"year_uuid" gorm:"type:varchar(255)"`
+	CountryUUID  string   `json:"country_uuid" gorm:"type:varchar(255)"`
+	Country      Country  `json:"country" gorm:"foreignKey:CountryUUID;references:UUID"`
+	ProvinceUUID string   `json:"province_uuid" gorm:"type:varchar(255)"`
+	Province     Province `json:"province" gorm:"foreignKey:ProvinceUUID;references:UUID"`
+	ProductUUID  string   `json:"product_uuid" gorm:"type:varchar(255)"`
+	YearUUID     string   `json:"year_uuid" gorm:"type:varchar(255)"`
 }

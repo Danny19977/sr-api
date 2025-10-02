@@ -164,30 +164,12 @@ func AuthUser(c *fiber.Ctx) error {
 	}
 
 	u := models.User{}
-
 	database.DB.
 		Where("users.uuid = ?", userUUID).
 		Preload("Country").
 		Preload("Province").
 		First(&u)
-
-	r := &models.UserResponse{
-		UUID:         u.UUID,
-		Fullname:     u.Fullname,
-		Email:        u.Email,
-		Title:        u.Title,
-		Phone:        u.Phone,
-		Role:         u.Role,
-		Permission:   u.Permission,
-		Status:       u.Status,
-		CountryUUID:  u.CountryUUID,
-		Country:      u.Country,
-		ProvinceUUID: u.ProvinceUUID,
-		Province:     u.Province,
-		CreatedAt:    u.CreatedAt,
-		UpdatedAt:    u.UpdatedAt,
-	}
-	return c.JSON(r)
+	return c.JSON(u.ToUserResponse())
 }
 
 func Logout(c *fiber.Ctx) error {
