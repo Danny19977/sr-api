@@ -8,7 +8,7 @@ type Week struct {
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 	DeletedAt time.Time `json:"deleted_at" gorm:"autoDeleteTime"`
 
-	Week     string `json:"week" gorm:"not null;unique"`
+	Week     string `json:"week" gorm:"not null"`
 	Quantity string `json:"quantity" gorm:"not null"`
 	Role     string `json:"role" gorm:"type:varchar(255);not null"`
 
