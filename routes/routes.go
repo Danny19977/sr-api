@@ -94,10 +94,6 @@ func Setup(app *fiber.App) {
 	// Dashboard controller - Protected routes - Sales area dashboard and year objectives
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
-	dash.Get("/area-sales", dashboard.GetAreaSalesDashboard)
-	dash.Get("/year-objectives", dashboard.GetYearObjectiveComparison)
-	dash.Get("/year-objectives/table", dashboard.GetYearObjectiveComparisonTable)
-	dash.Get("/province-year-summary", dashboard.GetProvinceYearSummary)
 	dash.Get("/overall-summary", dashboard.GetOverallSummaryDashboard)
 	dash.Get("/comparison-summary", dashboard.GetComparisonSummary)
 

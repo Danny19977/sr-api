@@ -12,22 +12,13 @@ import (
 
 // OverallSummaryDashboard represents the overall summary across all provinces
 type OverallSummaryDashboard struct {
-	TotalProvinces            int                     `json:"total_provinces"`
-	Year                      string                  `json:"year"`
-	TotalYearObjective        int64                   `json:"total_year_objective"`
-	TotalAchieved             int64                   `json:"total_achieved"`
-	OverallProgressPercentage float64                 `json:"overall_progress_percentage"`
-	ProvincesOnTrack          int                     `json:"provinces_on_track"`
-	ProvincesExceeded         int                     `json:"provinces_exceeded"`
-	ProvincesBehind           int                     `json:"provinces_behind"`
-	TopPerformingProvinces    []ProvinceRanking       `json:"top_performing_provinces"`
-	BottomPerformingProvinces []ProvinceRanking       `json:"bottom_performing_provinces"`
-	MonthlyAggregateProgress  []MonthlyAggregate      `json:"monthly_aggregate_progress"`
-	AchievementDistribution   AchievementDistribution `json:"achievement_distribution"`
-	TotalRevenue              float64                 `json:"totalRevenue"`
-	TotalUsers                int64                   `json:"totalUsers"`
-	TotalCountries            int64                   `json:"totalCountries"`
-	TotalProducts             int64                   `json:"totalProducts"`
+	TotalRevenue   float64 `json:"totalRevenue"`
+	TotalUsers     int64   `json:"totalUsers"`
+	ActiveUsers    int64   `json:"activeUsers"`
+	TotalCountries int64   `json:"totalCountries"`
+	TotalProvinces int64   `json:"totalProvinces"`
+	TotalProducts  int64   `json:"totalProducts"`
+	TotalSales     int64   `json:"totalSales"`
 }
 
 type ProvinceRanking struct {
@@ -127,12 +118,9 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 			"error": "Failed to fetch provinces",
 		})
 	}
-
-	totalProvinces := len(provinces)
 	var totalYearObjective int64 = 0
 	var totalAchieved int64 = 0
 	var provincesOnTrack, provincesExceeded, provincesBehind int
-
 	rankings := make([]ProvinceRanking, 0)
 	achievementDist := AchievementDistribution{}
 
@@ -167,7 +155,6 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 			percentage = (float64(achieved) / float64(yearObjective)) * 100
 		}
 
-		achievementLevel := getAchievementLevel(percentage)
 
 		// Count achievement categories
 		switch {
@@ -197,7 +184,6 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 			Achieved:         achieved,
 			Objective:        yearObjective,
 			Percentage:       percentage,
-			AchievementLevel: achievementLevel,
 		})
 	}
 
@@ -297,10 +283,6 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 	}
 
 	// Calculate overall progress percentage
-	var overallProgressPercentage float64 = 0
-	if totalYearObjective > 0 {
-		overallProgressPercentage = (float64(totalAchieved) / float64(totalYearObjective)) * 100
-	}
 
 	// Calculate total revenue
 	var totalRevenue float64
@@ -325,23 +307,41 @@ func GetOverallSummaryDashboard(c *fiber.Ctx) error {
 	var totalProducts int64
 	db.Model(&models.Product{}).Count(&totalProducts)
 
+	// Calculate active users (example: users with recent activity, fallback to 0 if not available)
+	var activeUsers int64 = 0
+	db.Model(&models.User{}).Where("last_login >= ?", time.Now().AddDate(0, 0, -30)).Count(&activeUsers)
+
+	// Calculate total provinces (filtered if province_uuid is provided)
+	var totalProvinces int64
+	provinceQuery := db.Model(&models.Province{})
+	provinceUUID := c.Query("province_uuid")
+	if provinceUUID != "" {
+		provinceQuery = provinceQuery.Where("uuid = ?", provinceUUID)
+	}
+	provinceQuery.Count(&totalProvinces)
+
+	// Calculate total sales (filtered by date and province)
+	var totalSales int64
+	salesQuery := db.Model(&models.Sale{})
+	if !startDate.IsZero() {
+		salesQuery = salesQuery.Where("created_at >= ?", startDate)
+	}
+	if !endDate.IsZero() {
+		salesQuery = salesQuery.Where("created_at <= ?", endDate)
+	}
+	if provinceUUID != "" {
+		salesQuery = salesQuery.Where("province_uuid = ?", provinceUUID)
+	}
+	salesQuery.Select("COALESCE(SUM(quantity), 0)").Scan(&totalSales)
+
 	result := OverallSummaryDashboard{
-		TotalProvinces:            totalProvinces,
-		Year:                      yearParam,
-		TotalYearObjective:        totalYearObjective,
-		TotalAchieved:             totalAchieved,
-		OverallProgressPercentage: overallProgressPercentage,
-		ProvincesOnTrack:          provincesOnTrack,
-		ProvincesExceeded:         provincesExceeded,
-		ProvincesBehind:           provincesBehind,
-		TopPerformingProvinces:    topPerforming,
-		BottomPerformingProvinces: bottomPerforming,
-		MonthlyAggregateProgress:  monthlyProgress,
-		AchievementDistribution:   achievementDist,
-		TotalRevenue:              totalRevenue,
-		TotalUsers:                totalUsers,
-		TotalCountries:            totalCountries,
-		TotalProducts:             totalProducts,
+		TotalRevenue:   totalRevenue,
+		TotalUsers:     totalUsers,
+		ActiveUsers:    activeUsers,
+		TotalCountries: totalCountries,
+		TotalProvinces: totalProvinces,
+		TotalProducts:  totalProducts,
+		TotalSales:     totalSales,
 	}
 
 	return c.JSON(fiber.Map{
@@ -402,8 +402,6 @@ func GetComparisonSummary(c *fiber.Ctx) error {
 			remaining = 0
 		}
 
-		achievementLevel := getAchievementLevel(percentage)
-
 		status := "On Track"
 		if percentage < 50 {
 			status = "Behind"
@@ -425,7 +423,6 @@ func GetComparisonSummary(c *fiber.Ctx) error {
 			Achieved:         provinceAchieved,
 			Percentage:       percentage,
 			Remaining:        remaining,
-			AchievementLevel: achievementLevel,
 			Status:           status,
 			Trend:            trend,
 		})
