@@ -1,6 +1,7 @@
 package routes
 
 import (
+	notificationController "github.com/Danny19977/sr-api/controller/Notification"
 	"github.com/Danny19977/sr-api/controller/auth"
 	"github.com/Danny19977/sr-api/controller/country"
 	"github.com/Danny19977/sr-api/controller/dashboard"
@@ -129,6 +130,17 @@ func Setup(app *fiber.App) {
 	monthGroup.Post("/create", monthController.CreateMonth)
 	monthGroup.Put("/update/:uuid", monthController.UpdateMonth)
 	monthGroup.Delete("/delete/:uuid", monthController.DeleteMonth)
+
+	// Notification controller - Protected routes
+	notificationGroup := api.Group("/notifications")
+	notificationGroup.Use(middlewares.IsAuthenticated)
+	notificationGroup.Get("/all", notificationController.GetAllNotifications)
+	notificationGroup.Get("/all/paginate", notificationController.GetPaginatedNotification)
+	notificationGroup.Get("/get/:uuid", notificationController.GetNotification)
+	notificationGroup.Get("/get/title/:title", notificationController.GetNotificationByTitleString)
+	notificationGroup.Post("/create", notificationController.CreateNotification)
+	notificationGroup.Put("/update/:uuid", notificationController.UpdateNotification)
+	notificationGroup.Delete("/delete/:uuid", notificationController.DeleteNotification)
 
 	// Week controller - Protected routes
 	weekGroup := api.Group("/weeks")
