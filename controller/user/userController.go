@@ -33,7 +33,7 @@ func GetPaginatedUsers(c *fiber.Ctx) error {
 	// Get user UUID from JWT
 	userUUID, _ := utils.GetUserUUIDFromToken(c)
 	var requestingUser models.User
-	db.Where("uuid = ?", userUUID).First(&requestingUser)
+	db.Preload("Country").Preload("Province").Where("uuid = ?", userUUID).First(&requestingUser)
 
 	query := db.Model(&models.User{})
 	if requestingUser.Role == "ASM" {

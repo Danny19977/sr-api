@@ -169,7 +169,45 @@ func AuthUser(c *fiber.Ctx) error {
 		Preload("Country").
 		Preload("Province").
 		First(&u)
-	return c.JSON(u.ToUserResponse())
+
+	// Create a debug response that shows more information about the user
+	response := fiber.Map{
+		"uuid":          u.UUID,
+		"fullname":      u.Fullname,
+		"email":         u.Email,
+		"phone":         u.Phone,
+		"title":         u.Title,
+		"role":          u.Role,
+		"permission":    u.Permission,
+		"status":        u.Status,
+		"country_uuid":  u.CountryUUID,
+		"province_uuid": u.ProvinceUUID,
+		"signature":     u.Signature,
+		"created_at":    u.CreatedAt,
+		"updated_at":    u.UpdatedAt,
+	}
+
+	// Add country information if available
+	if u.Country != nil {
+		response["country"] = fiber.Map{
+			"uuid": u.Country.UUID,
+			"name": u.Country.Name,
+		}
+	} else {
+		response["country"] = nil
+	}
+
+	// Add province information if available
+	if u.Province != nil {
+		response["province"] = fiber.Map{
+			"uuid": u.Province.UUID,
+			"name": u.Province.Name,
+		}
+	} else {
+		response["province"] = nil
+	}
+
+	return c.JSON(response)
 }
 
 func Logout(c *fiber.Ctx) error {
