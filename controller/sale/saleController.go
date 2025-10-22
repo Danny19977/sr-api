@@ -1,6 +1,7 @@
 package Sale
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/Danny19977/sr-api/database"
@@ -125,6 +126,9 @@ func CreateSale(c *fiber.Ctx) error {
 	if err := c.BodyParser(&s); err != nil {
 		return err
 	}
+	// Debug: Print parsed struct to console
+	fmt.Printf("DEBUG: Parsed Sale struct: %+v\n", s)
+
 	s.UUID = uuid.New().String()
 	database.DB.Create(s)
 	return c.JSON(fiber.Map{
