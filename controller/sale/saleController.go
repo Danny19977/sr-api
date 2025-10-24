@@ -122,12 +122,35 @@ func GetSale(c *fiber.Ctx) error {
 
 // Create Sale
 func CreateSale(c *fiber.Ctx) error {
+	// Debug: Print request headers
+	fmt.Printf("DEBUG: Content-Type: %s\n", c.Get("Content-Type"))
+	fmt.Printf("DEBUG: Request Method: %s\n", c.Method())
+
+	// Debug: Print raw request body
+	fmt.Printf("DEBUG: Raw request body: %s\n", string(c.Body()))
+
 	s := &models.Sale{}
 	if err := c.BodyParser(&s); err != nil {
-		return err
+		fmt.Printf("DEBUG: BodyParser error: %v\n", err)
+		return c.Status(400).JSON(fiber.Map{
+			"status":  "error",
+			"message": "Failed to parse request body",
+			"error":   err.Error(),
+		})
 	}
+
 	// Debug: Print parsed struct to console
 	fmt.Printf("DEBUG: Parsed Sale struct: %+v\n", s)
+
+	// Debug: Check individual UUID fields
+	fmt.Printf("DEBUG: ProvinceUUID: '%s' (length: %d)\n", s.ProvinceUUID, len(s.ProvinceUUID))
+	fmt.Printf("DEBUG: ProductUUID: '%s' (length: %d)\n", s.ProductUUID, len(s.ProductUUID))
+	fmt.Printf("DEBUG: UserUUID: '%s' (length: %d)\n", s.UserUUID, len(s.UserUUID))
+	fmt.Printf("DEBUG: YearUUID: '%s' (length: %d)\n", s.YearUUID, len(s.YearUUID))
+	fmt.Printf("DEBUG: MonthUUID: '%s' (length: %d)\n", s.MonthUUID, len(s.MonthUUID))
+	fmt.Printf("DEBUG: WeekUUID: '%s' (length: %d)\n", s.WeekUUID, len(s.WeekUUID))
+	fmt.Printf("DEBUG: Quantity: %d\n", s.Quantity)
+	fmt.Printf("DEBUG: Signature: '%s'\n", s.Signature)
 
 	s.UUID = uuid.New().String()
 	database.DB.Create(s)
