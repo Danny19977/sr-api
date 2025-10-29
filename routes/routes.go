@@ -4,7 +4,7 @@ import (
 	notificationController "github.com/Danny19977/sr-api/controller/Notification"
 	"github.com/Danny19977/sr-api/controller/auth"
 	"github.com/Danny19977/sr-api/controller/country"
-	// "github.com/Danny19977/sr-api/controller/dashboard"
+	"github.com/Danny19977/sr-api/controller/dashboard"
 	monthController "github.com/Danny19977/sr-api/controller/month"
 	"github.com/Danny19977/sr-api/controller/product"
 	"github.com/Danny19977/sr-api/controller/province"
@@ -95,6 +95,7 @@ func Setup(app *fiber.App) {
 	// Dashboard controller - Protected routes - Sales area dashboard and year objectives
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
+	dash.Get("/global-overview", dashboard.GetGlobalOverview)
 	// dash.Get("/overall-summary", dashboard.GetOverallSummaryDashboard)
 	// dash.Get("/comparison-summary", dashboard.GetComparisonSummary)
 
