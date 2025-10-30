@@ -67,8 +67,8 @@ func GetGlobalOverview(c *fiber.Ctx) error {
 		// Default to current month if no date range provided
 		now := time.Now()
 		startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.Local)
-		startDate = startOfMonth.Format("2006-01-02")
-		endDate = now.Format("2006-01-02")
+		startDate = startOfMonth.Format("2025-01-01")
+		endDate = now.Format("2025-12-30")
 	}
 
 	dateRange, err := parseDateRange(startDate, endDate)
