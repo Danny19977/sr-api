@@ -96,6 +96,7 @@ func Setup(app *fiber.App) {
 	dash := api.Group("/dashboard")
 	dash.Use(middlewares.IsAuthenticated)
 	dash.Get("/global-overview", dashboard.GetGlobalOverview)
+	dash.Get("/provincial-analysis", dashboard.GetProvincialAnalysis)
 	// dash.Get("/overall-summary", dashboard.GetOverallSummaryDashboard)
 	// dash.Get("/comparison-summary", dashboard.GetComparisonSummary)
 
