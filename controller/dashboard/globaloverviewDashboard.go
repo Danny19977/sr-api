@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -62,6 +63,7 @@ func GetGlobalOverview(c *fiber.Ctx) error {
 	// Parse date range from query parameters
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
+	provinceUUID := c.Query("province_uuid") // Get optional province filter
 
 	if startDate == "" || endDate == "" {
 		// Default to current month if no date range provided
@@ -80,7 +82,7 @@ func GetGlobalOverview(c *fiber.Ctx) error {
 	}
 
 	// Get all the required data
-	response, err := getOverviewData(dateRange)
+	response, err := getOverviewData(dateRange, provinceUUID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Error fetching dashboard data",
@@ -108,13 +110,20 @@ func parseDateRange(startDate, endDate string) (DateRange, error) {
 	}, nil
 }
 
-func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
+func getOverviewData(dateRange DateRange, provinceUUID string) (GlobalOverviewResponse, error) {
 	db := database.DB
+
+	// Build base query with optional province filter
+	baseQuery := db.Model(&models.Sale{}).
+		Where("created_at BETWEEN ? AND ?", dateRange.StartDate, dateRange.EndDate)
+
+	if provinceUUID != "" {
+		baseQuery = baseQuery.Where("province_uuid = ?", provinceUUID)
+	}
 
 	// Get total sales for current period
 	var totalSales int64
-	err := db.Model(&models.Sale{}).
-		Where("created_at BETWEEN ? AND ?", dateRange.StartDate, dateRange.EndDate).
+	err := baseQuery.
 		Select("COALESCE(SUM(quantity), 0)").
 		Row().
 		Scan(&totalSales)
@@ -127,10 +136,16 @@ func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
 	previousStart := dateRange.StartDate.Add(-periodDuration)
 	previousEnd := dateRange.StartDate
 
-	// Get previous period sales
+	// Get previous period sales with same province filter
+	previousQuery := db.Model(&models.Sale{}).
+		Where("created_at BETWEEN ? AND ?", previousStart, previousEnd)
+
+	if provinceUUID != "" {
+		previousQuery = previousQuery.Where("province_uuid = ?", provinceUUID)
+	}
+
 	var previousSales int64
-	err = db.Model(&models.Sale{}).
-		Where("created_at BETWEEN ? AND ?", previousStart, previousEnd).
+	err = previousQuery.
 		Select("COALESCE(SUM(quantity), 0)").
 		Row().
 		Scan(&previousSales)
@@ -148,12 +163,18 @@ func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
 	days := dateRange.EndDate.Sub(dateRange.StartDate).Hours() / 24
 	averageDailySales := float64(totalSales) / days
 
-	// Get provincial performance
+	// Get provincial performance with optional filter
 	var provincialPerformance []ProvincePerformance
-	err = db.Model(&models.Sale{}).
+	provincialQuery := db.Model(&models.Sale{}).
 		Select("provinces.uuid, provinces.name, COALESCE(SUM(sales.quantity), 0) as total_sales").
 		Joins("JOIN provinces ON provinces.uuid = sales.province_uuid").
-		Where("sales.created_at BETWEEN ? AND ?", dateRange.StartDate, dateRange.EndDate).
+		Where("sales.created_at BETWEEN ? AND ?", dateRange.StartDate, dateRange.EndDate)
+
+	if provinceUUID != "" {
+		provincialQuery = provincialQuery.Where("sales.province_uuid = ?", provinceUUID)
+	}
+
+	err = provincialQuery.
 		Group("provinces.uuid, provinces.name").
 		Order("total_sales DESC").
 		Find(&provincialPerformance).Error
@@ -171,7 +192,7 @@ func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
 	}
 
 	// Get sales trend based on granularity
-	salesTrend, err := getSalesTrend(dateRange, timeGranularity)
+	salesTrend, err := getSalesTrend(dateRange, timeGranularity, provinceUUID)
 	if err != nil {
 		return GlobalOverviewResponse{}, err
 	}
@@ -180,7 +201,7 @@ func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
 	var bestProvince, worstProvince ProvincePerformance
 	if len(provincialPerformance) > 0 {
 		// Get targets for provinces (You'll need to implement this based on your target storage)
-		targets, err := getProvincialTargets(dateRange)
+		targets, err := getProvincialTargets(dateRange, provinceUUID)
 		if err != nil {
 			return GlobalOverviewResponse{}, err
 		}
@@ -201,9 +222,9 @@ func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
 	// Get weekly/monthly heatmap data
 	var heatmap []ProvinceHeatmap
 	if timeGranularity == "daily" || timeGranularity == "weekly" {
-		heatmap, err = getWeeklyHeatmap(dateRange)
+		heatmap, err = getWeeklyHeatmap(dateRange, provinceUUID)
 	} else {
-		heatmap, err = getMonthlyHeatmap(dateRange)
+		heatmap, err = getMonthlyHeatmap(dateRange, provinceUUID)
 	}
 	if err != nil {
 		return GlobalOverviewResponse{}, err
@@ -227,13 +248,17 @@ func getOverviewData(dateRange DateRange) (GlobalOverviewResponse, error) {
 	}, nil
 }
 
-func getWeeklyHeatmap(dateRange DateRange) ([]ProvinceHeatmap, error) {
+func getWeeklyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeatmap, error) {
 	db := database.DB
 	var heatmap []ProvinceHeatmap
 
-	// Get all provinces
+	// Get provinces based on filter
 	var provinces []models.Province
-	if err := db.Find(&provinces).Error; err != nil {
+	provinceQuery := db.Model(&models.Province{})
+	if provinceUUID != "" {
+		provinceQuery = provinceQuery.Where("uuid = ?", provinceUUID)
+	}
+	if err := provinceQuery.Find(&provinces).Error; err != nil {
 		return nil, err
 	}
 
@@ -261,7 +286,7 @@ func getWeeklyHeatmap(dateRange DateRange) ([]ProvinceHeatmap, error) {
 			}
 
 			periodData = append(periodData, PeriodSales{
-				Period: "Week " + string(weekNum),
+				Period: fmt.Sprintf("Week %d", weekNum),
 				Sales:  sales,
 				// Calculate deviation from target here if targets are available
 				Deviation: 0,
@@ -279,13 +304,19 @@ func getWeeklyHeatmap(dateRange DateRange) ([]ProvinceHeatmap, error) {
 }
 
 // getSalesTrend returns sales trend data with appropriate time granularity
-func getSalesTrend(dateRange DateRange, granularity string) (SalesTrendData, error) {
+func getSalesTrend(dateRange DateRange, granularity string, provinceUUID string) (SalesTrendData, error) {
 	db := database.DB
 	var result SalesTrendData
 	result.Interval = granularity
 
 	var query string
 	var args []interface{}
+
+	// Build WHERE clause for province filter
+	provinceFilter := ""
+	if provinceUUID != "" {
+		provinceFilter = "AND province_uuid = ?"
+	}
 
 	switch granularity {
 	case "daily":
@@ -294,11 +325,15 @@ func getSalesTrend(dateRange DateRange, granularity string) (SalesTrendData, err
 				TO_CHAR(DATE(created_at), 'YYYY-MM-DD') as label,
 				COALESCE(SUM(quantity), 0) as sales
 			FROM sales 
-			WHERE created_at BETWEEN ? AND ?
+			WHERE created_at BETWEEN ? AND ? ` + provinceFilter + `
 			GROUP BY DATE(created_at)
 			ORDER BY DATE(created_at)
 		`
-		args = []interface{}{dateRange.StartDate, dateRange.EndDate}
+		if provinceUUID != "" {
+			args = []interface{}{dateRange.StartDate, dateRange.EndDate, provinceUUID}
+		} else {
+			args = []interface{}{dateRange.StartDate, dateRange.EndDate}
+		}
 
 	case "weekly":
 		query = `
@@ -306,11 +341,15 @@ func getSalesTrend(dateRange DateRange, granularity string) (SalesTrendData, err
 				CONCAT('Week ', EXTRACT(WEEK FROM created_at)) as label,
 				COALESCE(SUM(quantity), 0) as sales
 			FROM sales 
-			WHERE created_at BETWEEN ? AND ?
+			WHERE created_at BETWEEN ? AND ? ` + provinceFilter + `
 			GROUP BY EXTRACT(WEEK FROM created_at)
 			ORDER BY EXTRACT(WEEK FROM created_at)
 		`
-		args = []interface{}{dateRange.StartDate, dateRange.EndDate}
+		if provinceUUID != "" {
+			args = []interface{}{dateRange.StartDate, dateRange.EndDate, provinceUUID}
+		} else {
+			args = []interface{}{dateRange.StartDate, dateRange.EndDate}
+		}
 
 	case "monthly":
 		query = `
@@ -318,11 +357,15 @@ func getSalesTrend(dateRange DateRange, granularity string) (SalesTrendData, err
 				TO_CHAR(created_at, 'Month YYYY') as label,
 				COALESCE(SUM(quantity), 0) as sales
 			FROM sales 
-			WHERE created_at BETWEEN ? AND ?
+			WHERE created_at BETWEEN ? AND ? ` + provinceFilter + `
 			GROUP BY TO_CHAR(created_at, 'Month YYYY'), EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
 			ORDER BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
 		`
-		args = []interface{}{dateRange.StartDate, dateRange.EndDate}
+		if provinceUUID != "" {
+			args = []interface{}{dateRange.StartDate, dateRange.EndDate, provinceUUID}
+		} else {
+			args = []interface{}{dateRange.StartDate, dateRange.EndDate}
+		}
 	}
 
 	rows, err := db.Raw(query, args...).Rows()
@@ -345,7 +388,7 @@ func getSalesTrend(dateRange DateRange, granularity string) (SalesTrendData, err
 }
 
 // getProvincialTargets returns a map of province UUIDs to their sales targets
-func getProvincialTargets(dateRange DateRange) (map[string]int64, error) {
+func getProvincialTargets(dateRange DateRange, provinceUUID string) (map[string]int64, error) {
 	// This is a placeholder implementation. You'll need to implement this based on
 	// how you store and calculate targets in your system.
 	// Options:
@@ -358,7 +401,11 @@ func getProvincialTargets(dateRange DateRange) (map[string]int64, error) {
 	targets := make(map[string]int64)
 
 	var provinces []models.Province
-	if err := db.Find(&provinces).Error; err != nil {
+	provinceQuery := db.Model(&models.Province{})
+	if provinceUUID != "" {
+		provinceQuery = provinceQuery.Where("uuid = ?", provinceUUID)
+	}
+	if err := provinceQuery.Find(&provinces).Error; err != nil {
 		return nil, err
 	}
 
@@ -381,13 +428,17 @@ func getProvincialTargets(dateRange DateRange) (map[string]int64, error) {
 	return targets, nil
 }
 
-func getMonthlyHeatmap(dateRange DateRange) ([]ProvinceHeatmap, error) {
+func getMonthlyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeatmap, error) {
 	db := database.DB
 	var heatmap []ProvinceHeatmap
 
-	// Get all provinces
+	// Get provinces based on filter
 	var provinces []models.Province
-	if err := db.Find(&provinces).Error; err != nil {
+	provinceQuery := db.Model(&models.Province{})
+	if provinceUUID != "" {
+		provinceQuery = provinceQuery.Where("uuid = ?", provinceUUID)
+	}
+	if err := provinceQuery.Find(&provinces).Error; err != nil {
 		return nil, err
 	}
 
