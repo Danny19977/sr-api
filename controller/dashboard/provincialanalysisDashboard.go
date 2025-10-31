@@ -53,7 +53,8 @@ func GetProvincialAnalysis(c *fiber.Ctx) error {
 	// Parse date range from query parameters
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
-	provincesParam := c.Query("provinces") // Comma-separated list of province UUIDs
+	provincesParam := c.Query("provinces")     // Comma-separated list of province UUIDs
+	singleProvince := c.Query("province_uuid") // Optional single province for compatibility
 
 	if startDate == "" || endDate == "" {
 		// Default to current month if no date range provided
@@ -74,7 +75,20 @@ func GetProvincialAnalysis(c *fiber.Ctx) error {
 	// Parse province filter
 	var provinceUUIDs []string
 	if provincesParam != "" {
-		provinceUUIDs = strings.Split(provincesParam, ",")
+		parts := strings.Split(provincesParam, ",")
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				provinceUUIDs = append(provinceUUIDs, p)
+			}
+		}
+	}
+	// Fallback: accept single province_uuid for compatibility with frontend
+	if len(provinceUUIDs) == 0 && singleProvince != "" {
+		singleProvince = strings.TrimSpace(singleProvince)
+		if singleProvince != "" {
+			provinceUUIDs = []string{singleProvince}
+		}
 	}
 
 	// Get all the required data
@@ -241,7 +255,7 @@ func getContributionData(dateRange DateRange, granularity string, provinceUUIDs 
 
 	provinceFilter := ""
 	if len(provinceUUIDs) > 0 {
-		provinceFilter = "AND province_uuid IN (?)"
+		provinceFilter = "AND province_uuid IN ?"
 	}
 
 	switch granularity {
