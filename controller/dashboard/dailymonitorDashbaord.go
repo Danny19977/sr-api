@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,7 +12,9 @@ import (
 
 type DailyMonitorResponse struct {
 	TotalSalesToday      int64                 `json:"total_sales_today"`
-	PaceVsYesterday      float64               `json:"pace_vs_yesterday"` // Percentage comparison
+	TargetForToday       int64                 `json:"target_for_today"`    // Added: Target from Week table
+	AchievementPercent   float64               `json:"achievement_percent"` // Added: % of target achieved
+	PaceVsYesterday      float64               `json:"pace_vs_yesterday"`   // Percentage comparison
 	LastEntryStatus      []ProvinceEntryStatus `json:"last_entry_status"`
 	CumulativeSalesChart CumulativeSalesData   `json:"cumulative_sales_chart"`
 	DailyEntryTable      []DailyEntryRow       `json:"daily_entry_table"`
@@ -135,6 +138,19 @@ func getDailyMonitorData(selectedDate time.Time, provinceUUIDs []string) (DailyM
 		return DailyMonitorResponse{}, err
 	}
 
+	// Get target for today from Week table
+	_, weekNum := selectedDate.ISOWeek()
+	targetForToday, err := getDailyTargetFromWeek(selectedDate.Year(), weekNum, provinceUUIDs)
+	if err != nil {
+		return DailyMonitorResponse{}, err
+	}
+
+	// Calculate achievement percentage
+	var achievementPercent float64
+	if targetForToday > 0 {
+		achievementPercent = float64(totalSalesToday) / float64(targetForToday) * 100
+	}
+
 	// Get pace vs yesterday
 	paceVsYesterday, err := getPaceVsYesterday(selectedDate, provinceUUIDs)
 	if err != nil {
@@ -185,6 +201,8 @@ func getDailyMonitorData(selectedDate time.Time, provinceUUIDs []string) (DailyM
 
 	return DailyMonitorResponse{
 		TotalSalesToday:      totalSalesToday,
+		TargetForToday:       targetForToday,
+		AchievementPercent:   achievementPercent,
 		PaceVsYesterday:      paceVsYesterday,
 		LastEntryStatus:      lastEntryStatus,
 		CumulativeSalesChart: cumulativeSalesChart,
@@ -663,4 +681,51 @@ func getTimeSlotPieChart(startOfDay, endOfDay time.Time, provinceUUIDs []string,
 	}
 
 	return result, nil
+}
+
+// getDailyTargetFromWeek calculates the daily target from weekly targets
+// Weekly target is divided by 7 to get daily target, then aggregated for all filtered provinces
+func getDailyTargetFromWeek(year int, weekNum int, provinceUUIDs []string) (int64, error) {
+	db := database.DB
+
+	// Get year record
+	yearStr := strconv.Itoa(year)
+	var yearRecord models.Year
+	err := db.Model(&models.Year{}).
+		Where("year = ?", yearStr).
+		First(&yearRecord).Error
+
+	if err != nil {
+		return 0, nil // No year record, no target
+	}
+
+	weekStr := strconv.Itoa(weekNum)
+
+	// Build query for week records
+	query := db.Model(&models.Week{}).
+		Where("week = ? AND year_uuid = ?", weekStr, yearRecord.UUID)
+
+	if len(provinceUUIDs) > 0 {
+		query = query.Where("province_uuid IN ?", provinceUUIDs)
+	}
+
+	var weekRecords []models.Week
+	err = query.Find(&weekRecords).Error
+	if err != nil {
+		return 0, nil
+	}
+
+	// Aggregate weekly targets and divide by 7 for daily target
+	var totalDailyTarget int64
+	for _, weekRecord := range weekRecords {
+		weeklyTarget, err := strconv.ParseInt(weekRecord.Quantity, 10, 64)
+		if err != nil {
+			continue
+		}
+		// Divide weekly target by 7 to get daily target
+		dailyTarget := weeklyTarget / 7
+		totalDailyTarget += dailyTarget
+	}
+
+	return totalDailyTarget, nil
 }

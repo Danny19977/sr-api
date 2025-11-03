@@ -15,6 +15,15 @@ type ProvincialAnalysisResponse struct {
 	ContributionData     []ContributionPoint  `json:"contribution_data"`
 	IntraDayPattern      []IntraDayHeatmap    `json:"intraday_pattern"`
 	TimeGranularity      string               `json:"time_granularity"`
+	ProvinceTargets      []ProvinceTarget     `json:"province_targets"` // Added for target tracking
+}
+
+type ProvinceTarget struct {
+	ProvinceUUID string  `json:"province_uuid"`
+	ProvinceName string  `json:"province_name"`
+	Target       int64   `json:"target"`
+	Actual       int64   `json:"actual"`
+	Achievement  float64 `json:"achievement"` // Percentage
 }
 
 type ProvinceTimeSeries struct {
@@ -131,11 +140,18 @@ func getProvincialAnalysisData(dateRange DateRange, provinceUUIDs []string) (Pro
 		return ProvincialAnalysisResponse{}, err
 	}
 
+	// Get targets and calculate achievement
+	provinceTargets, err := getProvinceTargetsWithAchievement(dateRange, provinceUUIDs)
+	if err != nil {
+		return ProvincialAnalysisResponse{}, err
+	}
+
 	return ProvincialAnalysisResponse{
 		ProvincialComparison: provincialComparison,
 		ContributionData:     contributionData,
 		IntraDayPattern:      intraDayPattern,
 		TimeGranularity:      timeGranularity,
+		ProvinceTargets:      provinceTargets,
 	}, nil
 }
 
@@ -440,4 +456,56 @@ func getIntraDayPattern(dateRange DateRange, provinceUUIDs []string) ([]IntraDay
 func getWeekNumber(date time.Time) int {
 	_, week := date.ISOWeek()
 	return week
+}
+
+// getProvinceTargetsWithAchievement fetches targets and calculates achievement percentage
+func getProvinceTargetsWithAchievement(dateRange DateRange, provinceUUIDs []string) ([]ProvinceTarget, error) {
+	db := database.DB
+	var result []ProvinceTarget
+
+	// Get targets from Year/Month/Week tables
+	targets, err := getTargetsForDateRange(dateRange, provinceUUIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get actual sales for each province
+	var provinces []models.Province
+	provinceQuery := db.Model(&models.Province{})
+	if len(provinceUUIDs) > 0 {
+		provinceQuery = provinceQuery.Where("uuid IN ?", provinceUUIDs)
+	}
+	if err := provinceQuery.Find(&provinces).Error; err != nil {
+		return nil, err
+	}
+
+	for _, province := range provinces {
+		var actualSales int64
+		err := db.Model(&models.Sale{}).
+			Where("province_uuid = ? AND created_at BETWEEN ? AND ?",
+				province.UUID, dateRange.StartDate, dateRange.EndDate).
+			Select("COALESCE(SUM(quantity), 0)").
+			Row().
+			Scan(&actualSales)
+
+		if err != nil {
+			continue
+		}
+
+		target := targets[province.UUID]
+		var achievement float64
+		if target > 0 {
+			achievement = float64(actualSales) / float64(target) * 100
+		}
+
+		result = append(result, ProvinceTarget{
+			ProvinceUUID: province.UUID,
+			ProvinceName: province.Name,
+			Target:       target,
+			Actual:       actualSales,
+			Achievement:  achievement,
+		})
+	}
+
+	return result, nil
 }

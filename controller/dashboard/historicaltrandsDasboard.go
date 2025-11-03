@@ -14,8 +14,16 @@ type HistoricalTrendsResponse struct {
 	CumulativeYearlySales []YearlyCumulativeSeries `json:"cumulative_yearly_sales"`  // Horse race chart
 	AnnualSalesByProvince []ProvinceAnnualData     `json:"annual_sales_by_province"` // Grouped bar chart
 	YoYGrowthHeatmap      []ProvinceYoYGrowth      `json:"yoy_growth_heatmap"`       // Heatmap table
+	YearlyTargets         []YearlyTargetData       `json:"yearly_targets"`           // Added: Target tracking
 	SelectedYears         []int                    `json:"selected_years"`           // Years being compared
 	ViewBy                string                   `json:"view_by"`                  // "monthly" or "quarterly"
+}
+
+type YearlyTargetData struct {
+	Year               int     `json:"year"`
+	Target             int64   `json:"target"`
+	Actual             int64   `json:"actual"`
+	AchievementPercent float64 `json:"achievement_percent"`
 }
 
 type YearlyCumulativeSeries struct {
@@ -36,8 +44,10 @@ type ProvinceAnnualData struct {
 }
 
 type YearSalesData struct {
-	Year       int   `json:"year"`
-	TotalSales int64 `json:"total_sales"`
+	Year               int     `json:"year"`
+	TotalSales         int64   `json:"total_sales"`
+	Target             int64   `json:"target"`              // Added: Target from Month/Year table
+	AchievementPercent float64 `json:"achievement_percent"` // Added: % of target achieved
 }
 
 type ProvinceYoYGrowth struct {
@@ -134,10 +144,17 @@ func getHistoricalTrendsData(years []int, provinceUUIDs []string, viewBy string)
 		return HistoricalTrendsResponse{}, err
 	}
 
+	// Get yearly targets and achievement
+	yearlyTargets, err := getYearlyTargetsWithAchievement(years, provinceUUIDs)
+	if err != nil {
+		return HistoricalTrendsResponse{}, err
+	}
+
 	return HistoricalTrendsResponse{
 		CumulativeYearlySales: cumulativeYearlySales,
 		AnnualSalesByProvince: annualSalesByProvince,
 		YoYGrowthHeatmap:      yoyGrowthHeatmap,
+		YearlyTargets:         yearlyTargets,
 		SelectedYears:         years,
 		ViewBy:                viewBy,
 	}, nil
@@ -259,9 +276,24 @@ func getAnnualSalesByProvince(years []int, provinceUUIDs []string) ([]ProvinceAn
 				Row().
 				Scan(&totalSales)
 
+			// Get yearly target from Month table (sum all 12 months)
+			var yearTarget int64
+			for monthNum := 1; monthNum <= 12; monthNum++ {
+				monthTarget, _ := getMonthlyTargetByProvince(province.UUID, year, monthNum)
+				yearTarget += monthTarget
+			}
+
+			// Calculate achievement percentage
+			var achievementPercent float64
+			if yearTarget > 0 {
+				achievementPercent = float64(totalSales) / float64(yearTarget) * 100
+			}
+
 			provinceData.YearlyData = append(provinceData.YearlyData, YearSalesData{
-				Year:       year,
-				TotalSales: totalSales,
+				Year:               year,
+				TotalSales:         totalSales,
+				Target:             yearTarget,
+				AchievementPercent: achievementPercent,
 			})
 		}
 
@@ -405,6 +437,70 @@ func getYoYGrowthHeatmap(years []int, provinceUUIDs []string, viewBy string) ([]
 		}
 
 		result = append(result, provinceGrowth)
+	}
+
+	return result, nil
+}
+
+// getYearlyTargetsWithAchievement fetches yearly targets and calculates achievement
+func getYearlyTargetsWithAchievement(years []int, provinceUUIDs []string) ([]YearlyTargetData, error) {
+	db := database.DB
+	var result []YearlyTargetData
+
+	for _, year := range years {
+		startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
+		endDate := time.Date(year+1, 1, 1, 0, 0, 0, 0, time.UTC)
+
+		// Get actual sales for the year
+		query := db.Model(&models.Sale{}).
+			Where("created_at >= ? AND created_at < ?", startDate, endDate)
+
+		if len(provinceUUIDs) > 0 {
+			query = query.Where("province_uuid IN ?", provinceUUIDs)
+		}
+
+		var actualSales int64
+		query.Select("COALESCE(SUM(quantity), 0)").Row().Scan(&actualSales)
+
+		// Get targets from Year or Month tables
+		targets, _ := getYearlyTargets(year, provinceUUIDs)
+
+		var totalTarget int64
+		for _, target := range targets {
+			totalTarget += target
+		}
+
+		// If no yearly targets, try to sum monthly targets
+		if totalTarget == 0 {
+			// Get all provinces
+			var provinces []models.Province
+			provinceQuery := db.Model(&models.Province{})
+			if len(provinceUUIDs) > 0 {
+				provinceQuery = provinceQuery.Where("uuid IN ?", provinceUUIDs)
+			}
+			provinceQuery.Find(&provinces)
+
+			// Sum monthly targets for all 12 months for each province
+			for _, province := range provinces {
+				for monthNum := 1; monthNum <= 12; monthNum++ {
+					monthTarget, _ := getMonthlyTargetByProvince(province.UUID, year, monthNum)
+					totalTarget += monthTarget
+				}
+			}
+		}
+
+		// Calculate achievement percentage
+		var achievementPercent float64
+		if totalTarget > 0 {
+			achievementPercent = float64(actualSales) / float64(totalTarget) * 100
+		}
+
+		result = append(result, YearlyTargetData{
+			Year:               year,
+			Target:             totalTarget,
+			Actual:             actualSales,
+			AchievementPercent: achievementPercent,
+		})
 	}
 
 	return result, nil

@@ -197,11 +197,15 @@ func getOverviewData(dateRange DateRange, provinceUUID string) (GlobalOverviewRe
 		return GlobalOverviewResponse{}, err
 	}
 
-	// Get best and worst provinces with targets
+	// Get best and worst provinces with targets from Year/Month/Week tables
 	var bestProvince, worstProvince ProvincePerformance
 	if len(provincialPerformance) > 0 {
-		// Get targets for provinces (You'll need to implement this based on your target storage)
-		targets, err := getProvincialTargets(dateRange, provinceUUID)
+		// Get real targets from Year/Month/Week tables based on date range
+		var provinceFilter []string
+		if provinceUUID != "" {
+			provinceFilter = []string{provinceUUID}
+		}
+		targets, err := getTargetsForDateRange(dateRange, provinceFilter)
 		if err != nil {
 			return GlobalOverviewResponse{}, err
 		}
@@ -267,11 +271,11 @@ func getWeeklyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeatm
 
 		// Get weekly sales data for the province
 		rows, err := db.Model(&models.Sale{}).
-			Select("EXTRACT(WEEK FROM created_at) as week_num, COALESCE(SUM(quantity), 0) as sales").
+			Select("EXTRACT(WEEK FROM created_at) as week_num, EXTRACT(YEAR FROM created_at) as year_num, COALESCE(SUM(quantity), 0) as sales").
 			Where("province_uuid = ? AND created_at BETWEEN ? AND ?",
 				province.UUID, dateRange.StartDate, dateRange.EndDate).
-			Group("week_num").
-			Order("week_num").
+			Group("week_num, year_num").
+			Order("year_num, week_num").
 			Rows()
 		if err != nil {
 			return nil, err
@@ -280,16 +284,25 @@ func getWeeklyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeatm
 
 		for rows.Next() {
 			var weekNum int
+			var yearNum int
 			var sales int64
-			if err := rows.Scan(&weekNum, &sales); err != nil {
+			if err := rows.Scan(&weekNum, &yearNum, &sales); err != nil {
 				return nil, err
 			}
 
+			// Get target for this week from Week table
+			target, _ := getWeeklyTargetByProvince(province.UUID, yearNum, weekNum)
+
+			// Calculate deviation from target
+			var deviation float64
+			if target > 0 {
+				deviation = float64(sales-target) / float64(target) * 100
+			}
+
 			periodData = append(periodData, PeriodSales{
-				Period: fmt.Sprintf("Week %d", weekNum),
-				Sales:  sales,
-				// Calculate deviation from target here if targets are available
-				Deviation: 0,
+				Period:    fmt.Sprintf("Week %d", weekNum),
+				Sales:     sales,
+				Deviation: deviation,
 			})
 		}
 
@@ -387,45 +400,14 @@ func getSalesTrend(dateRange DateRange, granularity string, provinceUUID string)
 	return result, nil
 }
 
-// getProvincialTargets returns a map of province UUIDs to their sales targets
+// getProvincialTargets has been replaced by getTargetsForDateRange in targetHelpers.go
+// This function is deprecated and kept only for backwards compatibility
 func getProvincialTargets(dateRange DateRange, provinceUUID string) (map[string]int64, error) {
-	// This is a placeholder implementation. You'll need to implement this based on
-	// how you store and calculate targets in your system.
-	// Options:
-	// 1. Fixed targets from configuration
-	// 2. Calculated based on historical data
-	// 3. Stored in a separate table
-	// For now, we'll return some dummy targets
-
-	db := database.DB
-	targets := make(map[string]int64)
-
-	var provinces []models.Province
-	provinceQuery := db.Model(&models.Province{})
+	var provinceFilter []string
 	if provinceUUID != "" {
-		provinceQuery = provinceQuery.Where("uuid = ?", provinceUUID)
+		provinceFilter = []string{provinceUUID}
 	}
-	if err := provinceQuery.Find(&provinces).Error; err != nil {
-		return nil, err
-	}
-
-	// For demonstration, set target as 120% of average historical sales
-	for _, province := range provinces {
-		var avgSales int64
-		err := db.Model(&models.Sale{}).
-			Select("COALESCE(AVG(quantity), 0)").
-			Where("province_uuid = ? AND created_at < ?",
-				province.UUID, dateRange.StartDate).
-			Row().
-			Scan(&avgSales)
-		if err != nil {
-			return nil, err
-		}
-
-		targets[province.UUID] = int64(float64(avgSales) * 1.2)
-	}
-
-	return targets, nil
+	return getTargetsForDateRange(dateRange, provinceFilter)
 }
 
 func getMonthlyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeatmap, error) {
@@ -447,11 +429,11 @@ func getMonthlyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeat
 
 		// Get monthly sales data for the province
 		rows, err := db.Model(&models.Sale{}).
-			Select("TO_CHAR(created_at, 'Month') as month_name, COALESCE(SUM(quantity), 0) as sales").
+			Select("TO_CHAR(created_at, 'Month') as month_name, EXTRACT(MONTH FROM created_at) as month_num, EXTRACT(YEAR FROM created_at) as year_num, COALESCE(SUM(quantity), 0) as sales").
 			Where("province_uuid = ? AND created_at BETWEEN ? AND ?",
 				province.UUID, dateRange.StartDate, dateRange.EndDate).
-			Group("month_name").
-			Order("month_name").
+			Group("month_name, month_num, year_num").
+			Order("year_num, month_num").
 			Rows()
 		if err != nil {
 			return nil, err
@@ -460,16 +442,26 @@ func getMonthlyHeatmap(dateRange DateRange, provinceUUID string) ([]ProvinceHeat
 
 		for rows.Next() {
 			var monthName string
+			var monthNum int
+			var yearNum int
 			var sales int64
-			if err := rows.Scan(&monthName, &sales); err != nil {
+			if err := rows.Scan(&monthName, &monthNum, &yearNum, &sales); err != nil {
 				return nil, err
 			}
 
+			// Get target for this month from Month table
+			target, _ := getMonthlyTargetByProvince(province.UUID, yearNum, monthNum)
+
+			// Calculate deviation from target
+			var deviation float64
+			if target > 0 {
+				deviation = float64(sales-target) / float64(target) * 100
+			}
+
 			periodData = append(periodData, PeriodSales{
-				Period: monthName,
-				Sales:  sales,
-				// Calculate deviation from target here if targets are available
-				Deviation: 0,
+				Period:    monthName,
+				Sales:     sales,
+				Deviation: deviation,
 			})
 		}
 
