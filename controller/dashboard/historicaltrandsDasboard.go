@@ -11,7 +11,7 @@ import (
 )
 
 type HistoricalTrendsResponse struct {
-	CumulativeYearlySales []YearlyCumulativeSeries `json:"cumulative_yearly_sales"` // Horse race chart
+	CumulativeYearlySales []YearlyCumulativeSeries `json:"cumulative_yearly_sales"`  // Horse race chart
 	AnnualSalesByProvince []ProvinceAnnualData     `json:"annual_sales_by_province"` // Grouped bar chart
 	YoYGrowthHeatmap      []ProvinceYoYGrowth      `json:"yoy_growth_heatmap"`       // Heatmap table
 	SelectedYears         []int                    `json:"selected_years"`           // Years being compared
@@ -30,9 +30,9 @@ type TimeValue struct {
 }
 
 type ProvinceAnnualData struct {
-	ProvinceUUID string           `json:"province_uuid"`
-	ProvinceName string           `json:"province_name"`
-	YearlyData   []YearSalesData  `json:"yearly_data"` // Sales for each year
+	ProvinceUUID string          `json:"province_uuid"`
+	ProvinceName string          `json:"province_name"`
+	YearlyData   []YearSalesData `json:"yearly_data"` // Sales for each year
 }
 
 type YearSalesData struct {
@@ -41,26 +41,26 @@ type YearSalesData struct {
 }
 
 type ProvinceYoYGrowth struct {
-	ProvinceUUID   string               `json:"province_uuid"`
-	ProvinceName   string               `json:"province_name"`
-	PeriodGrowth   []PeriodGrowthData   `json:"period_growth"` // Growth % for each period
+	ProvinceUUID string             `json:"province_uuid"`
+	ProvinceName string             `json:"province_name"`
+	PeriodGrowth []PeriodGrowthData `json:"period_growth"` // Growth % for each period
 }
 
 type PeriodGrowthData struct {
-	Period         string  `json:"period"`          // "Jan", "Feb" or "Q1", "Q2"
-	MonthIndex     int     `json:"month_index"`     // For sorting
-	CurrentSales   int64   `json:"current_sales"`   // Current year sales
-	PreviousSales  int64   `json:"previous_sales"`  // Previous year sales
-	GrowthPercent  float64 `json:"growth_percent"`  // YoY % change
+	Period        string  `json:"period"`         // "Jan", "Feb" or "Q1", "Q2"
+	MonthIndex    int     `json:"month_index"`    // For sorting
+	CurrentSales  int64   `json:"current_sales"`  // Current year sales
+	PreviousSales int64   `json:"previous_sales"` // Previous year sales
+	GrowthPercent float64 `json:"growth_percent"` // YoY % change
 }
 
 // GetHistoricalTrends handles the historical trends dashboard data retrieval
 func GetHistoricalTrends(c *fiber.Ctx) error {
 	// Parse query parameters
-	yearsParam := c.Query("years")           // Comma-separated years: "2025,2024,2023"
-	provincesParam := c.Query("provinces")   // Comma-separated province UUIDs
+	yearsParam := c.Query("years")         // Comma-separated years: "2025,2024,2023"
+	provincesParam := c.Query("provinces") // Comma-separated province UUIDs
 	singleProvince := c.Query("province_uuid")
-	viewBy := c.Query("view_by")             // "monthly" or "quarterly"
+	viewBy := c.Query("view_by") // "monthly" or "quarterly"
 
 	// Default to monthly view
 	if viewBy == "" {
@@ -170,13 +170,13 @@ func getCumulativeYearlySales(years []int, provinceUUIDs []string, viewBy string
 			var cumulative int64 = 0
 			for _, quarter := range quarters {
 				var quarterSales int64
-				
+
 				startDate := time.Date(year, time.Month(quarter.months[0]), 1, 0, 0, 0, 0, time.UTC)
 				endDate := time.Date(year, time.Month(quarter.months[len(quarter.months)-1]+1), 1, 0, 0, 0, 0, time.UTC)
 
 				query := db.Model(&models.Sale{}).
 					Where("created_at >= ? AND created_at < ?", startDate, endDate)
-				
+
 				if len(provinceUUIDs) > 0 {
 					query = query.Where("province_uuid IN ?", provinceUUIDs)
 				}
@@ -201,7 +201,7 @@ func getCumulativeYearlySales(years []int, provinceUUIDs []string, viewBy string
 
 				query := db.Model(&models.Sale{}).
 					Where("created_at >= ? AND created_at < ?", startDate, endDate)
-				
+
 				if len(provinceUUIDs) > 0 {
 					query = query.Where("province_uuid IN ?", provinceUUIDs)
 				}
@@ -253,7 +253,7 @@ func getAnnualSalesByProvince(years []int, provinceUUIDs []string) ([]ProvinceAn
 
 			var totalSales int64
 			db.Model(&models.Sale{}).
-				Where("province_uuid = ? AND created_at >= ? AND created_at < ?", 
+				Where("province_uuid = ? AND created_at >= ? AND created_at < ?",
 					province.UUID, startDate, endDate).
 				Select("COALESCE(SUM(quantity), 0)").
 				Row().
@@ -327,7 +327,7 @@ func getYoYGrowthHeatmap(years []int, provinceUUIDs []string, viewBy string) ([]
 
 				var currentSales int64
 				db.Model(&models.Sale{}).
-					Where("province_uuid = ? AND created_at >= ? AND created_at < ?", 
+					Where("province_uuid = ? AND created_at >= ? AND created_at < ?",
 						province.UUID, currentStart, currentEnd).
 					Select("COALESCE(SUM(quantity), 0)").
 					Row().
@@ -339,7 +339,7 @@ func getYoYGrowthHeatmap(years []int, provinceUUIDs []string, viewBy string) ([]
 
 				var previousSales int64
 				db.Model(&models.Sale{}).
-					Where("province_uuid = ? AND created_at >= ? AND created_at < ?", 
+					Where("province_uuid = ? AND created_at >= ? AND created_at < ?",
 						province.UUID, previousStart, previousEnd).
 					Select("COALESCE(SUM(quantity), 0)").
 					Row().
@@ -370,7 +370,7 @@ func getYoYGrowthHeatmap(years []int, provinceUUIDs []string, viewBy string) ([]
 
 				var currentSales int64
 				db.Model(&models.Sale{}).
-					Where("province_uuid = ? AND created_at >= ? AND created_at < ?", 
+					Where("province_uuid = ? AND created_at >= ? AND created_at < ?",
 						province.UUID, currentStart, currentEnd).
 					Select("COALESCE(SUM(quantity), 0)").
 					Row().
@@ -382,7 +382,7 @@ func getYoYGrowthHeatmap(years []int, provinceUUIDs []string, viewBy string) ([]
 
 				var previousSales int64
 				db.Model(&models.Sale{}).
-					Where("province_uuid = ? AND created_at >= ? AND created_at < ?", 
+					Where("province_uuid = ? AND created_at >= ? AND created_at < ?",
 						province.UUID, previousStart, previousEnd).
 					Select("COALESCE(SUM(quantity), 0)").
 					Row().
