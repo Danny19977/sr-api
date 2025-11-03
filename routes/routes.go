@@ -98,6 +98,7 @@ func Setup(app *fiber.App) {
 	dash.Get("/global-overview", dashboard.GetGlobalOverview)
 	dash.Get("/provincial-analysis", dashboard.GetProvincialAnalysis)
 	dash.Get("/daily-monitor", dashboard.GetDailyMonitor)
+	dash.Get("/historical-trends", dashboard.GetHistoricalTrends)
 	// dash.Get("/overall-summary", dashboard.GetOverallSummaryDashboard)
 	// dash.Get("/comparison-summary", dashboard.GetComparisonSummary)
 
