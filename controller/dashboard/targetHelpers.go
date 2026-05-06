@@ -24,19 +24,21 @@ func getYearlyTargets(year int, provinceUUIDs []string) (map[string]int64, error
 
 	// Query Year table to get the yearly target
 	var yearRecord models.Year
-	err := db.Model(&models.Year{}).
+	result := db.Model(&models.Year{}).
 		Where("year = ?", yearStr).
-		First(&yearRecord).Error
+		Limit(1).
+		Find(&yearRecord)
 
-	if err != nil {
-		// No yearly target found, return empty map
+	if result.RowsAffected == 0 {
+		// Silently return empty map if no year record exists
 		return targets, nil
 	}
 
 	// Convert quantity string to int64
 	yearlyTarget, err := strconv.ParseInt(yearRecord.Quantity, 10, 64)
 	if err != nil {
-		return targets, err
+		// Return empty map if quantity is invalid
+		return targets, nil
 	}
 
 	// If no province filter, return the global yearly target for all provinces
@@ -44,7 +46,11 @@ func getYearlyTargets(year int, provinceUUIDs []string) (map[string]int64, error
 		// Get all provinces and distribute target
 		var provinces []models.Province
 		if err := db.Find(&provinces).Error; err != nil {
-			return targets, err
+			return targets, nil
+		}
+
+		if len(provinces) == 0 {
+			return targets, nil
 		}
 
 		// Distribute yearly target equally among provinces (or use another strategy)
@@ -54,16 +60,16 @@ func getYearlyTargets(year int, provinceUUIDs []string) (map[string]int64, error
 		}
 	} else {
 		// Distribute target among filtered provinces
-		targetPerProvince := yearlyTarget / int64(len(provinceUUIDs))
-		for _, uuid := range provinceUUIDs {
-			targets[uuid] = targetPerProvince
+		if len(provinceUUIDs) > 0 {
+			targetPerProvince := yearlyTarget / int64(len(provinceUUIDs))
+			for _, uuid := range provinceUUIDs {
+				targets[uuid] = targetPerProvince
+			}
 		}
 	}
 
 	return targets, nil
-}
-
-// getMonthlyTargets fetches monthly targets for provinces within a date range
+} // getMonthlyTargets fetches monthly targets for provinces within a date range
 func getMonthlyTargets(dateRange DateRange, provinceUUIDs []string) (map[string]int64, error) {
 	db := database.DB
 	targets := make(map[string]int64)
@@ -89,7 +95,8 @@ func getMonthlyTargets(dateRange DateRange, provinceUUIDs []string) (map[string]
 	var monthRecords []models.Month
 	err := query.Find(&monthRecords).Error
 	if err != nil {
-		return targets, err
+		// Return empty map if query fails
+		return targets, nil
 	}
 
 	// Aggregate targets by province
@@ -146,7 +153,8 @@ func getWeeklyTargets(dateRange DateRange, provinceUUIDs []string) (map[string]i
 	var weekRecords []models.Week
 	err := query.Find(&weekRecords).Error
 	if err != nil {
-		return targets, err
+		// Return empty map if query fails
+		return targets, nil
 	}
 
 	// Aggregate targets by province
@@ -197,29 +205,34 @@ func getMonthlyTargetByProvince(provinceUUID string, year int, monthNum int) (in
 	// Get year record first
 	yearStr := strconv.Itoa(year)
 	var yearRecord models.Year
-	err := db.Model(&models.Year{}).
+	result := db.Model(&models.Year{}).
 		Where("year = ?", yearStr).
-		First(&yearRecord).Error
+		Limit(1).
+		Find(&yearRecord)
 
-	if err != nil {
-		return 0, nil // No year record, no target
+	if result.RowsAffected == 0 {
+		// Silently return 0 if no year record exists
+		return 0, nil
 	}
 
 	// Get month record
 	var monthRecord models.Month
-	err = db.Model(&models.Month{}).
+	result = db.Model(&models.Month{}).
 		Where("province_uuid = ? AND month = ? AND year_uuid = ?",
 			provinceUUID, monthName, yearRecord.UUID).
-		First(&monthRecord).Error
+		Limit(1).
+		Find(&monthRecord)
 
-	if err != nil {
-		return 0, nil // No month target found
+	if result.RowsAffected == 0 {
+		// Silently return 0 if no month target found
+		return 0, nil
 	}
 
 	// Convert quantity string to int64
 	target, err := strconv.ParseInt(monthRecord.Quantity, 10, 64)
 	if err != nil {
-		return 0, err
+		// Return 0 if quantity is invalid
+		return 0, nil
 	}
 
 	return target, nil
@@ -232,11 +245,13 @@ func getWeeklyTargetByProvince(provinceUUID string, year int, weekNum int) (int6
 	// Get year record first
 	yearStr := strconv.Itoa(year)
 	var yearRecord models.Year
-	err := db.Model(&models.Year{}).
+	result := db.Model(&models.Year{}).
 		Where("year = ?", yearStr).
-		First(&yearRecord).Error
+		Limit(1).
+		Find(&yearRecord)
 
-	if err != nil {
+	if result.RowsAffected == 0 {
+		// Silently return 0 if no year record exists
 		return 0, nil
 	}
 
@@ -244,19 +259,22 @@ func getWeeklyTargetByProvince(provinceUUID string, year int, weekNum int) (int6
 
 	// Get week record
 	var weekRecord models.Week
-	err = db.Model(&models.Week{}).
+	result = db.Model(&models.Week{}).
 		Where("province_uuid = ? AND week = ? AND year_uuid = ?",
 			provinceUUID, weekStr, yearRecord.UUID).
-		First(&weekRecord).Error
+		Limit(1).
+		Find(&weekRecord)
 
-	if err != nil {
-		return 0, nil // No week target found
+	if result.RowsAffected == 0 {
+		// Silently return 0 if no week target found
+		return 0, nil
 	}
 
 	// Convert quantity string to int64
 	target, err := strconv.ParseInt(weekRecord.Quantity, 10, 64)
 	if err != nil {
-		return 0, err
+		// Return 0 if quantity is invalid
+		return 0, nil
 	}
 
 	return target, nil
@@ -282,11 +300,12 @@ func getQuarterlyTargets(year int, quarter int, provinceUUIDs []string) (map[str
 	// Get year record
 	yearStr := strconv.Itoa(year)
 	var yearRecord models.Year
-	err := db.Model(&models.Year{}).
+	result := db.Model(&models.Year{}).
 		Where("year = ?", yearStr).
-		First(&yearRecord).Error
+		Limit(1).
+		Find(&yearRecord)
 
-	if err != nil {
+	if result.RowsAffected == 0 {
 		return targets, nil
 	}
 
@@ -308,9 +327,9 @@ func getQuarterlyTargets(year int, quarter int, provinceUUIDs []string) (map[str
 	query = query.Where("month IN ?", quarterMonthNames)
 
 	var monthRecords []models.Month
-	err = query.Find(&monthRecords).Error
+	err := query.Find(&monthRecords).Error
 	if err != nil {
-		return targets, err
+		return targets, nil
 	}
 
 	// Aggregate targets by province
